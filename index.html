@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Aesthetic Excellence | TALENT.PREMIUM</title>
+    <!-- Premium Typography -->
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;600;800;900&display=swap" rel="stylesheet">
+    <!-- Icon Suite -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <!-- Advanced ML & DB Layers -->
+    <script src="https://cdn.jsdelivr.net/npm/brain.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+
+    <div id="app">
+        <!-- --- NAVIGATION SYSTEM --- -->
+        <nav class="nav-bar">
+            <div class="brand">
+                <i data-lucide="mic"></i>
+                <span>TALENT.PREMIUM</span>
+            </div>
+            <div class="nav-links">
+                <button class="nav-btn active" data-tab="dashboard">
+                    <i data-lucide="layout-dashboard"></i> Showcases
+                </button>
+                <button class="nav-btn" data-tab="management">
+                    <i data-lucide="music"></i> Talent Registry
+                </button>
+                <button class="nav-btn" data-tab="analytics">
+                    <i data-lucide="sparkles"></i> Analytics Lab
+                </button>
+                <div style="width:1px; height:20px; background:var(--border); margin:0 0.5rem"></div>
+                <button id="adminToggleBtn" class="theme-toggle" onclick="toggleAdminMode()" title="Admin Lock: Restricted Access">
+                    <i data-lucide="lock"></i>
+                </button>
+                <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+                    <i data-lucide="sun"></i>
+                </button>
+            </div>
+            <div id="cloudStatus" class="status-badge" title="Database Synchronization Status">
+                <div class="status-dot"></div> Cloud Active
+            </div>
+        </nav>
+
+        <!-- --- HERO SECTION --- -->
+        <header class="hero">
+            <h1>Aesthetic Excellence</h1>
+            <p>A premium Multi-Criteria Decision Making (MCDM) framework for identifying top-tier talent in artistic and announce-based events.</p>
+        </header>
+
+        <!-- --- MAIN TABS --- -->
+        <main class="active-tab-container">
+            
+            <!-- TAB 1: SHOWCASES DASHBOARD -->
+            <section id="dashboardSection" class="tab-pane active">
+                <div class="dashboard-grid">
+                    
+                    <!-- LEFT: ANNOUNCED EVENTS -->
+                    <aside class="glass-panel">
+                        <div class="panel-header">
+                            <h3><i data-lucide="megaphone" style="width:18px"></i> Announced Events</h3>
+                        </div>
+                        <div id="eventList" class="event-list">
+                            <!-- Injected via app.js -->
+                            <p style="padding:1rem; opacity:0.5">Fetching international showcases...</p>
+                        </div>
+                    </aside>
+
+                    <!-- MIDDLE: PERFORMER RANKINGS -->
+                    <div class="main-content">
+                        <div id="noSelection" class="glass-panel" style="padding:4rem; text-align:center;">
+                            <i data-lucide="mouse-pointer-2" style="width:48px; height:48px; opacity:0.2; margin-bottom:1rem"></i>
+                            <h3>Select a showcase to begin analysis</h3>
+                            <p style="color:var(--text-secondary)">Choose an event from the left sidebar to view performative rankings.</p>
+                        </div>
+
+                        <div id="eventAnalytics" style="display:none">
+                            <div class="glass-panel event-header-box" style="padding:2rem; margin-bottom:2rem;">
+                                <div style="display:flex; justify-content:space-between; align-items:flex-start">
+                                    <div>
+                                        <h2 id="targetEventName" style="font-size:2rem; margin-bottom:0.5rem; color:var(--text-primary)">--</h2>
+                                        <p id="targetEventDesc" style="color:var(--text-secondary); max-width:500px">--</p>
+                                    </div>
+                                    <button class="primary-btn" style="width:auto; padding:0.8rem 1.5rem" onclick="exportDossier()">
+                                        <i data-lucide="share-2"></i> Export Dossier
+                                    </button>
+                                </div>
+                            </div>
+
+                            <div id="recommendationContainer" class="recommendation-container">
+                                <!-- Rankings injected here -->
+                            </div>
+
+                            <!-- PHASE 2: TEAM OPTIMIZATION -->
+                            <div id="teamDiscoverySection" class="glass-panel" style="margin-top:2rem; padding:2rem; display:none;">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:1.5rem">
+                                    <div>
+                                        <h3 style="display:flex; align-items:center; gap:0.5rem">
+                                            <i data-lucide="users" style="color:var(--accent-primary)"></i> 
+                                            Ensemble Team Discovery
+                                        </h3>
+                                        <p style="font-size:0.8rem; color:var(--text-secondary)">Heuristic optimization for multi-performer showcase ensembles.</p>
+                                    </div>
+                                    <button class="primary-btn" style="width:auto" onclick="optimizeTeam()">
+                                        Optimize Ensemble
+                                    </button>
+                                </div>
+                                <div id="teamOptimizationResult" style="display:none">
+                                    <h4 id="teamCoverage" style="margin-bottom:1rem; color:var(--accent-primary)">--</h4>
+                                    <div id="teamMembers" style="display:flex; gap:1.5rem; flex-wrap:wrap"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- RIGHT: REAL-TIME FEED -->
+                    <aside class="glass-panel">
+                        <div class="panel-header">
+                            <h3><i data-lucide="activity" style="width:18px"></i> Talent Feed</h3>
+                        </div>
+                        <div id="syncLog" style="padding:1rem; font-size:0.8rem; overflow-y:auto; max-height:600px">
+                            <div class="log-entry">Connecting to global talent database...</div>
+                        </div>
+                    </aside>
+
+                </div>
+            </section>
+
+            <!-- TAB 2: TALENT REGISTRY -->
+            <section id="managementSection" class="tab-pane">
+                <div class="management-grid">
+                    <div class="glass-panel" style="padding:2rem">
+                        <h3>New Performer Intake</h3>
+                        <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:2rem">Algorithmic extraction of proficiencies from career bios.</p>
+                        
+                        <form id="participantForm">
+                            <div class="input-group">
+                                <label>Full Stage Name</label>
+                                <input type="text" name="name" placeholder="e.g. Elena Vance" required>
+                            </div>
+                            <div class="input-group">
+                                <label>Sri Lankan Region / Opportunity</label>
+                                <select name="region" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+                                    <option value="Western">Western (High Resource Access)</option>
+                                    <option value="Central">Central (Moderate Resource Access)</option>
+                                    <option value="Southern">Southern (Moderate Resource Access)</option>
+                                    <option value="North Western">North Western (Developing Resource Access)</option>
+                                    <option value="Sabaragamuwa">Sabaragamuwa (Developing Resource Access)</option>
+                                    <option value="Eastern">Eastern (Low Resource Access)</option>
+                                    <option value="Northern">Northern (Low Resource Access)</option>
+                                    <option value="North Central">North Central (Low Resource Access)</option>
+                                    <option value="Uva">Uva (Constrained Resource Access)</option>
+                                </select>
+                            </div>
+                             <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                                 <div class="input-group" style="flex:1; margin-bottom: 0;">
+                                     <label>Industry Tenure (Yrs)</label>
+                                     <input type="number" name="experience" min="0" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+                                 </div>
+                                 <div class="input-group" style="flex:1; margin-bottom: 0;">
+                                     <label>Months Inactive</label>
+                                     <input type="number" name="inactiveMonths" min="0" placeholder="e.g. 2" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+                                 </div>
+                             </div>
+                             <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
+                                 <div class="input-group" style="flex:1; margin-bottom: 0;">
+                                     <label>Judge A (%)</label>
+                                     <input type="number" name="judgeA" min="0" max="100" placeholder="e.g. 85" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+                                 </div>
+                                 <div class="input-group" style="flex:1; margin-bottom: 0;">
+                                     <label>Judge B (%)</label>
+                                     <input type="number" name="judgeB" min="0" max="100" placeholder="e.g. 90" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+                                 </div>
+                                 <div class="input-group" style="flex:1; margin-bottom: 0;">
+                                     <label>Judge C (%)</label>
+                                     <input type="number" name="judgeC" min="0" max="100" placeholder="e.g. 88" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+                                 </div>
+                             </div>
+                            <div class="input-group">
+                                <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom: 0.6rem;">
+                                    <label style="margin-bottom:0">Artistic Biography & Skills</label>
+                                    <div>
+                                        <input type="file" id="cvUpload" accept=".pdf,.doc,.docx,.txt" style="display:none" onchange="window.simulateCVUpload(this)">
+                                        <button type="button" class="tag" style="cursor:pointer; background:rgba(99,102,241,0.15); border:1px solid var(--accent-primary); color:var(--accent-primary); font-weight:700" onclick="document.getElementById('cvUpload').click()">
+                                            <i data-lucide="file-text" style="width:12px; height:12px; margin-right:4px"></i> Upload CV (NLP Scan)
+                                        </button>
+                                    </div>
+                                </div>
+                                <textarea id="bioInput" name="bio" rows="4" placeholder="Mention vocal range, stage presence, diction, geta bera, etc..."></textarea>
+                                <div id="skillChips" style="display:flex; flex-wrap:wrap; gap:0.5rem; margin-top:0.5rem"></div>
+                            </div>
+                            <div class="input-group">
+                                <label>Showcase Performance Clip (Video/Audio URL)</label>
+                                <input type="text" name="videoUrl" placeholder="e.g. https://www.youtube.com/watch?v=dQw4w9WgXcQ or leave blank for dynamic audio visualizer">
+                            </div>
+                            <button type="submit" class="primary-btn">
+                                <i data-lucide="sparkles"></i> Analyze & Register
+                            </button>
+                        </form>
+                    </div>
+
+                    <div class="glass-panel">
+                        <div class="panel-header"><h3>Active Performer Registry</h3></div>
+                        <div style="padding:1rem; overflow-x:auto">
+                            <table style="width:100%; text-align:left; border-collapse: collapse;">
+                                <thead style="font-size:0.75rem; text-transform:uppercase; color:var(--text-secondary)">
+                                    <tr>
+                                        <th style="padding:1rem">Name</th>
+                                        <th style="padding:1rem">Region</th>
+                                        <th style="padding:1rem">Tenure</th>
+                                        <th style="padding:1rem">Consistency</th>
+                                        <th style="padding:1rem">Extracted Proficiences</th>
+                                        <th style="padding:1rem">Actions</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="participantRegistry"></tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB 3: ANALYTICS LAB -->
+            <section id="analyticsSection" class="tab-pane">
+                <div class="analytics-dashboard">
+                    <div class="glass-panel calibration-panel" style="padding:2rem">
+                        <div style="display:flex; justify-content:space-between; align-items:flex-start; margin-bottom:2rem; flex-wrap:wrap; gap:1rem;">
+                            <div>
+                                <h3 style="background: linear-gradient(90deg, var(--accent-primary), var(--text-primary)); -webkit-background-clip: text; background-clip: text; -webkit-text-fill-color: transparent;">Artistic Calibration</h3>
+                                <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:0.5rem; margin-bottom:0">Tune the neural decision priorities to align with specific showcase goals.</p>
+                            </div>
+                            <label style="display:flex; align-items:center; gap:0.5rem; font-size:0.8rem; cursor:pointer; background:rgba(255,255,255,0.05); padding:0.5rem 1rem; border-radius:5px; border:1px solid var(--border);">
+                                <input type="checkbox" id="ablationToggle" onchange="toggleAblationMode(this.checked)" style="accent-color:var(--accent-gold);"> 
+                                <strong>Research Mode</strong>
+                            </label>
+                        </div>
+
+                        <div id="ablationPanel" style="display:none; margin-bottom:2rem; padding:1.5rem; border:1px solid var(--accent-gold); border-radius:12px; background:rgba(255,215,0,0.02);">
+                            <h4 style="color:var(--accent-gold); margin-bottom:0.5rem; display:flex; align-items:center; gap:0.5rem"><i data-lucide="microscope" style="width:16px; height:16px"></i> Ablation Study: Mean Squared Error (MSE)</h4>
+                            <p style="font-size:0.75rem; color:var(--text-secondary); margin-bottom:1rem;">Comparing algorithmic components against the Judge Consensus Ground Truth (Lower is better).</p>
+                            <div style="display:grid; grid-template-columns:repeat(auto-fit, minmax(120px, 1fr)); gap:1rem;">
+                                <div style="background:var(--bg-deep); padding:1rem; border-radius:8px; text-align:center;">
+                                    <div style="font-size:0.65rem; text-transform:uppercase; color:var(--text-muted)">Neural Network Alone</div>
+                                    <div id="mseNN" style="font-size:1.4rem; font-weight:bold; color:var(--accent-secondary)">0.00</div>
+                                </div>
+                                <div style="background:var(--bg-deep); padding:1rem; border-radius:8px; text-align:center;">
+                                    <div style="font-size:0.65rem; text-transform:uppercase; color:var(--text-muted)">Weighted Sum Alone</div>
+                                    <div id="mseWSM" style="font-size:1.4rem; font-weight:bold; color:var(--accent-primary)">0.00</div>
+                                </div>
+                                <div style="background:rgba(255,215,0,0.05); padding:1rem; border-radius:8px; text-align:center; border:1px solid rgba(255,215,0,0.3);">
+                                    <div style="font-size:0.65rem; text-transform:uppercase; color:var(--accent-gold)">Hybrid Ensemble</div>
+                                    <div id="mseHybrid" style="font-size:1.6rem; font-weight:bold; color:var(--accent-gold)">0.00</div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="input-group slider-group-skill">
+                            <label style="display:flex; justify-content:space-between">Artistic Skill Mastery <span><span id="weightSkillVal">60</span>%</span></label>
+                            <input type="range" id="weightSkill" class="cyber-slider" min="0" max="100" value="60">
+                        </div>
+                        <div class="input-group slider-group-consist">
+                            <label style="display:flex; justify-content:space-between">Delivery Consistency <span><span id="weightConsistVal">30</span>%</span></label>
+                            <input type="range" id="weightConsist" class="cyber-slider" min="0" max="100" value="30">
+                        </div>
+                        <div class="input-group slider-group-exp">
+                            <label style="display:flex; justify-content:space-between">Industry Tenure <span><span id="weightExpVal">10</span>%</span></label>
+                            <input type="range" id="weightExp" class="cyber-slider" min="0" max="100" value="10">
+                        </div>
+                        <button id="autoTuneBtn" class="primary-btn" onclick="autoTuneWeights()" style="margin-top:2rem; width: 100%;">
+                            <i data-lucide="zap"></i> Auto-Tune Calibration
+                        </button>
+                    </div>
+
+                    <div style="display:flex; flex-direction:column; gap:2rem;">
+                        <div class="glass-panel" style="padding:2rem; background: transparent; border: none; box-shadow: none">
+                            <h3>Talent Archetype Clustering</h3>
+                            <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem">Algorithmic segmentation of the pool into dynamic industry archetypes.</p>
+                            <div id="kmeansClusters" class="clustering-panel">
+                                <!-- Injected -->
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="audit-table-wrapper">
+                     <div style="padding:1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                         <h3>Performance Engine V3.0 Audit</h3>
+                         <div style="display:flex; gap:1rem; align-items:center;">
+                             <div id="alphaValueDisplay" style="font-size:0.75rem; background:rgba(255,255,255,0.05); padding:0.3rem 0.6rem; border-radius:5px; border:1px solid var(--border); color: var(--text-secondary);">
+                                 Inter-Rater Reliability (α): <strong id="cronbachAlphaVal" style="color:var(--accent-primary);">0.00</strong>
+                             </div>
+                             <div id="statusBadge" class="status-badge pulsate">Calibrating Intialization...</div>
+                         </div>
+                     </div>
+                    <div style="background:#000; padding:0.5rem 1.5rem; font-size:0.75rem; color:var(--accent-success); font-family:monospace; display:flex; justify-content:space-between; flex-wrap:wrap; gap:0.5rem">
+                        <div id="modelLog">Neural Core Online</div>
+                        <div style="display:flex; gap:1rem">
+                            <span>Epoch: <span id="calibrationEpochs">0</span></span>
+                            <span>Loss: <span id="modelLoss">1.000000</span></span>
+                        </div>
+                    </div>
+                    <table class="audit-grid">
+                        <thead>
+                            <tr>
+                                <th>Performer</th><th>Industry Fit</th><th>Conf.</th><th>Conflict Index</th><th>Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="consistencyMatrix" style="text-align:center"></tbody>
+                    </table>
+                </div>
+
+                <div class="audit-table-wrapper" style="margin-top:2rem">
+                    <div style="padding:1.5rem; border-bottom:1px solid var(--border); display:flex; justify-content:space-between; align-items:center;">
+                        <div>
+                            <h3>Regional Fairness & Bias Audit</h3>
+                            <p style="font-size:0.75rem; color:var(--text-secondary)">Monitoring algorithmic parity across Sri Lankan provinces.</p>
+                        </div>
+                        <i data-lucide="scale" style="color:var(--accent-primary)"></i>
+                    </div>
+                    <table class="audit-grid">
+                        <thead>
+                            <tr>
+                                <th>Region</th><th>Performer Count</th><th>Avg Scientific Score</th><th>Avg NN Forecast</th><th>Parity Status</th>
+                            </tr>
+                        </thead>
+                        <tbody id="fairnessAuditMatrix" style="text-align:center">
+                            <tr><td colspan="5" style="padding:2rem; opacity:0.5">Awaiting Regional Data Segmentation...</td></tr>
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- SPSS EXPORT SECTION -->
+                <div class="glass-panel" style="margin-top:2rem; padding:2rem; text-align:center; background:var(--bg-deep); border-radius:12px; border:1px solid var(--border);">
+                    <h3 style="margin-bottom:1rem">Data Extraction & Export</h3>
+                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem">Export raw numerical matrices for SPSS / R Studio statistical modeling.</p>
+                    <button class="primary-btn" onclick="exportSPSS()" style="width:100%; max-width:300px; margin:0 auto; background:var(--accent-secondary); color:white; border:none; padding:1rem; border-radius:8px; cursor:pointer; font-weight:bold;">
+                        <i data-lucide="download"></i> Download SPSS Dossier (.csv)
+                    </button>
+                </div>
+            </section>
+
+        </main>
+
+        <!-- --- REPORT MODAL --- -->
+        <div id="detailsModal" class="modal-overlay">
+            <div class="modal-content" style="position:relative">
+                <button class="close-modal"><i data-lucide="x"></i></button>
+                <div id="modalBody"></div>
+            </div>
+        </div>
+
+        <!-- --- NOTIFICATION SYSTEM --- -->
+        <div id="toastContainer" style="position:fixed; bottom:2rem; right:2rem; pointer-events:none; z-index:5000"></div>
+
+    </div>
+
+    <script src="app.js"></script>
+</body>
+</html>

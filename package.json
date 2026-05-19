@@ -1,0 +1,14 @@
+{
+  "name": "medalist-recommendation-system",
+  "version": "1.0.0",
+  "description": "A premium Multi-Criteria Decision Making (MCDM) framework for identifying top-tier talent.",
+  "main": "index.html",
+  "scripts": {
+    "dev": "vite",
+    "build": "vite build",
+    "preview": "vite preview"
+  },
+  "devDependencies": {
+    "vite": "^5.0.0"
+  }
+}
