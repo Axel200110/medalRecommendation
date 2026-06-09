@@ -297,9 +297,19 @@ async function loadData() {
 
     const statusDot = document.querySelector('#cloudStatus .status-dot');
 
+    const defaultSeedData = [
+        { id: 'seed-1', name: 'Elena Vance', region: 'Western', experience: 12, consistency: 92, skills: 'Vocal Range, Diction, Opera, Stage Presence', judgeA: 90, judgeB: 95, judgeC: 91, inactiveMonths: 1 },
+        { id: 'seed-2', name: 'Julian Marsh', region: 'Central', experience: 5, consistency: 85, skills: 'Public Speaking, Emceeing, Professionalism, Humor', judgeA: 82, judgeB: 88, judgeC: 85, inactiveMonths: 4 },
+        { id: 'seed-3', name: 'Sarah Sings', region: 'Uva', experience: 8, consistency: 78, skills: 'Vocal Range, Pop, Stage Presence, Improvisation', judgeA: 75, judgeB: 80, judgeC: 79, inactiveMonths: 12 }
+    ];
+
     if (!_supabase) {
         console.warn("Supabase not initialized. Using local defaults.");
         if (statusDot) statusDot.classList.remove('online');
+        if (State.participants.length === 0) {
+            State.participants = defaultSeedData;
+            saveToCache();
+        }
         runKMeansAndAnomalies();
         return;
     }
@@ -309,14 +319,10 @@ async function loadData() {
         const fetchP = _supabase.from('participants').select('*');
         const [pRes] = await Promise.race([Promise.all([fetchP]), timeout]);
 
-        if (pRes.data && pRes.data.length > 0) State.participants = pRes.data;
-        else {
-            // Seed sample performers if empty
-            State.participants = [
-                { id: 'seed-1', name: 'Elena Vance', region: 'Western', experience: 12, consistency: 92, skills: 'Vocal Range, Diction, Opera, Stage Presence', judgeA: 90, judgeB: 95, judgeC: 91, inactiveMonths: 1 },
-                { id: 'seed-2', name: 'Julian Marsh', region: 'Central', experience: 5, consistency: 85, skills: 'Public Speaking, Emceeing, Professionalism, Humor', judgeA: 82, judgeB: 88, judgeC: 85, inactiveMonths: 4 },
-                { id: 'seed-3', name: 'Sarah Sings', region: 'Uva', experience: 8, consistency: 78, skills: 'Vocal Range, Pop, Stage Presence, Improvisation', judgeA: 75, judgeB: 80, judgeC: 79, inactiveMonths: 12 }
-            ];
+        if (pRes.data && pRes.data.length > 0) {
+            State.participants = pRes.data;
+        } else {
+            State.participants = defaultSeedData;
         }
 
         const statusBadge = document.getElementById('cloudStatus');
@@ -329,13 +335,27 @@ async function loadData() {
         logSync("Cloud Connection Established: Talent Database Operational.", "system");
         saveToCache();
         runKMeansAndAnomalies();
+        renderMyProfile();
+        renderParticipantRegistry();
+        renderConsistencyMatrix();
+        if (State.selectedEvent) renderRecommendations();
     } catch (err) {
         console.error("Cloud sync failed. Using cached data.", err);
         logSync("Warning: Cloud Connection Failed. Working in Local-Only Mode.", "remote");
+        
+        if (State.participants.length === 0) {
+            State.participants = defaultSeedData;
+            saveToCache();
+        }
+        
         const statusBadge = document.getElementById('cloudStatus');
         if (statusBadge) statusBadge.classList.remove('operational');
         if (statusDot) statusDot.classList.remove('online');
         runKMeansAndAnomalies();
+        renderMyProfile();
+        renderParticipantRegistry();
+        renderConsistencyMatrix();
+        if (State.selectedEvent) renderRecommendations();
     }
 }
 
@@ -572,11 +592,18 @@ window.optimizeTeam = () => {
 async function initApp() {
     initTheme();
     setupEventListeners();
+    
+    // Sync initial admin menu link states
+    document.querySelectorAll('.admin-link').forEach(el => {
+        el.style.display = State.isAdmin ? 'flex' : 'none';
+    });
+
     switchTab(State.activeTab); 
     await loadData();
     renderEvents();
     renderParticipantRegistry();
     renderSkillChips();
+    renderMyProfile();
     setTimeout(initPredictor, 1200);
     
     // Automatically select the first event to populate dashboards by default
@@ -663,9 +690,22 @@ function setupEventListeners() {
 
             setTimeout(async () => {
                 const formData = new FormData(pForm);
-                const judgeAVal = parseInt(formData.get('judgeA')) || 0;
-                const judgeBVal = parseInt(formData.get('judgeB')) || 0;
-                const judgeCVal = parseInt(formData.get('judgeC')) || 0;
+
+                const myId = localStorage.getItem('my_profile_id');
+                const isUpdating = myId && State.participants.some(p => String(p.id) === String(myId));
+
+                let existingJudgeA = 0;
+                let existingJudgeB = 0;
+                let existingJudgeC = 0;
+
+                if (isUpdating) {
+                    const existing = State.participants.find(p => String(p.id) === String(myId));
+                    if (existing) {
+                        existingJudgeA = existing.judgeA || 0;
+                        existingJudgeB = existing.judgeB || 0;
+                        existingJudgeC = existing.judgeC || 0;
+                    }
+                }
 
                 const forensics = {
                     name: formData.get('name'),
@@ -673,47 +713,71 @@ function setupEventListeners() {
                     experience: parseInt(formData.get('experience')),
                     inactiveMonths: parseInt(formData.get('inactiveMonths')) || 0,
                     videoUrl: formData.get('videoUrl') || '',
-                    judgeA: judgeAVal,
-                    judgeB: judgeBVal,
-                    judgeC: judgeCVal,
-                    consistency: Math.round((judgeAVal + judgeBVal + judgeCVal) / 3),
+                    judgeA: existingJudgeA,
+                    judgeB: existingJudgeB,
+                    judgeC: existingJudgeC,
+                    consistency: Math.round((existingJudgeA + existingJudgeB + existingJudgeC) / 3),
                     skills: extractSkillsFromText(formData.get('bio'))
                 };
 
-                let pID = null;
-                if (_supabase) {
-                    const { data, error } = await _supabase.from('participants').insert([forensics]).select();
-                    if (!error && data) {
-                        pID = data[0].id;
-                        logSync(`Successfully synced ${forensics.name} to Cloud Database.`, "success");
-                    } else {
-                        console.error("Cloud insert error:", error);
-                        logSync("Cloud Sync Error: Data saved locally only.", "remote");
+                let pID = myId;
+                if (isUpdating) {
+                    forensics.id = myId;
+                    if (_supabase) {
+                        const { error } = await _supabase.from('participants').update(forensics).eq('id', myId);
+                        if (!error) {
+                            logSync(`Successfully updated ${forensics.name} in Cloud Database.`, "success");
+                        } else {
+                            console.error("Cloud update error:", error);
+                            logSync("Cloud Sync Error: Update saved locally only.", "remote");
+                        }
                     }
+                    const idx = State.participants.findIndex(p => String(p.id) === String(myId));
+                    if (idx !== -1) State.participants[idx] = forensics;
+                } else {
+                    if (_supabase) {
+                        const { data, error } = await _supabase.from('participants').insert([forensics]).select();
+                        if (!error && data) {
+                            pID = data[0].id;
+                            logSync(`Successfully synced ${forensics.name} to Cloud Database.`, "success");
+                        } else {
+                            console.error("Cloud insert error:", error);
+                            logSync("Cloud Sync Error: Data saved locally only.", "remote");
+                        }
+                    }
+
+                    if (pID) forensics.id = pID;
+                    else forensics.id = Date.now();
+
+                    State.participants.push(forensics);
+                    localStorage.setItem('my_profile_id', forensics.id);
                 }
 
-                if (pID) forensics.id = pID;
-                else forensics.id = Date.now();
-
-                State.participants.push(forensics);
                 saveToCache();
                 pForm.reset();
                 runKMeansAndAnomalies();
                 renderParticipantRegistry();
+                renderMyProfile();
                 if (State.selectedEvent) renderRecommendations();
                 
-                showToast("Artistic extraction completed.", "primary");
-                logSync(`Extracted performer: ${forensics.name}`, "primary");
+                showToast(isUpdating ? "Profile updated successfully." : "Profile registered successfully.", "primary");
+                logSync(`${isUpdating ? 'Updated' : 'Registered'} performer: ${forensics.name}`, "primary");
                 
-                btn.innerHTML = `<i data-lucide="sparkles"></i> Analyze Proficiency & Register`;
+                btn.innerHTML = `<i data-lucide="sparkles"></i> Analyze & Register`;
                 btn.disabled = false;
                 lucide.createIcons();
+
+                switchTab('profile');
             }, 600);
         };
     }
 }
 
 function switchTab(tabId) {
+    if (!State.isAdmin && (tabId === 'management' || tabId === 'analytics')) {
+        return switchTab('dashboard');
+    }
+
     const section = document.getElementById(`${tabId}Section`);
     if (!section) return switchTab('dashboard');
     
@@ -749,6 +813,15 @@ window.toggleAdminMode = () => {
         const icon = adminBtn.querySelector('i');
         if (icon) icon.setAttribute('data-lucide', State.isAdmin ? 'unlock' : 'lock');
         lucide.createIcons();
+    }
+
+    // Toggle administrative links visibility
+    document.querySelectorAll('.admin-link').forEach(el => {
+        el.style.display = State.isAdmin ? 'flex' : 'none';
+    });
+
+    if (!State.isAdmin && (State.activeTab === 'management' || State.activeTab === 'analytics')) {
+        switchTab('dashboard');
     }
     
     renderParticipantRegistry();
@@ -833,9 +906,14 @@ function renderParticipantRegistry() {
             <td>${p.skills}</td>
             <td>
                 ${State.isAdmin ? `
-                    <button class="action-btn" onclick="deleteParticipant('${p.id}')">
-                        <i data-lucide="trash-2"></i>
-                    </button>
+                    <div style="display: flex; gap: 0.5rem;">
+                        <button class="action-btn" onclick="openGradingModal('${p.id}')" title="Score Performer" style="background: rgba(99,102,241,0.15); border: 1px solid var(--accent-primary); color: var(--accent-primary);">
+                            <i data-lucide="award"></i>
+                        </button>
+                        <button class="action-btn" onclick="deleteParticipant('${p.id}')" title="Delete Performer" style="background: rgba(239,68,68,0.15); border: 1px solid var(--danger); color: var(--danger);">
+                            <i data-lucide="trash-2"></i>
+                        </button>
+                    </div>
                 ` : `<span style="opacity:0.2; font-size:0.7rem"><i data-lucide="lock" style="width:12px; height:12px"></i></span>`}
             </td>
         </tr>
@@ -1239,3 +1317,155 @@ window.simulateCVUpload = (input) => {
         }
     }, 2400);
 };
+
+function renderMyProfile() {
+    const noProfileEl = document.getElementById('noProfileState');
+    const profileDetailsEl = document.getElementById('profileDetailsState');
+    if (!noProfileEl || !profileDetailsEl) return;
+
+    const myId = localStorage.getItem('my_profile_id');
+    const myProfile = State.participants.find(p => String(p.id) === String(myId));
+
+    if (!myProfile) {
+        noProfileEl.style.display = 'block';
+        profileDetailsEl.style.display = 'none';
+        return;
+    }
+
+    noProfileEl.style.display = 'none';
+    profileDetailsEl.style.display = 'block';
+
+    document.getElementById('myProfileName').textContent = myProfile.name;
+    document.getElementById('myProfileRegion').textContent = myProfile.region;
+    document.getElementById('myProfileExperience').textContent = `${myProfile.experience} Yrs`;
+    document.getElementById('myProfileConsistency').textContent = `${myProfile.consistency}%`;
+
+    const skillsContainer = document.getElementById('myProfileSkills');
+    if (skillsContainer) {
+        const skillsList = myProfile.skills.split(',').map(s => s.trim());
+        skillsContainer.innerHTML = skillsList.map(s => `<span class="tag" style="background:rgba(255,255,255,0.05); border:1px solid var(--border)">${s}</span>`).join('');
+    }
+
+    const mediaContainer = document.getElementById('myProfileVideoContainer');
+    if (mediaContainer) {
+        if (myProfile.videoUrl) {
+            mediaContainer.innerHTML = `
+                <div style="position:relative; width:100%; max-width:480px; margin:0 auto; padding-bottom:270px; height:0; overflow:hidden; border-radius:12px; border:1px solid var(--border)">
+                    ${getMediaEmbedHtml(myProfile.videoUrl)}
+                </div>
+            `;
+        } else {
+            mediaContainer.innerHTML = `
+                <div style="background:var(--bg-deep); border-radius:12px; padding:1.25rem; display:flex; flex-direction:column; align-items:center; justify-content:center; border:1px dashed var(--border); min-height:100px; max-width:480px; margin:0 auto; width:100%">
+                    <span style="font-size:0.7rem; color:var(--text-secondary); text-align:center; font-weight:700">No media clip uploaded.</span>
+                </div>
+            `;
+        }
+    }
+    if (window.lucide) {
+        window.lucide.createIcons();
+    }
+}
+
+async function deleteMyProfile() {
+    const myId = localStorage.getItem('my_profile_id');
+    if (!myId) return;
+
+    if (!confirm("Are you sure you want to delete your registered profile? This will remove all your data from the system.")) return;
+
+    if (_supabase) {
+        await _supabase.from('participants').delete().eq('id', myId);
+    }
+    State.participants = State.participants.filter(p => String(p.id) !== String(myId));
+    localStorage.removeItem('my_profile_id');
+    
+    saveToCache();
+    renderParticipantRegistry();
+    renderConsistencyMatrix();
+    runKMeansAndAnomalies();
+    renderMyProfile();
+    
+    if (State.selectedEvent) renderRecommendations();
+    
+    showToast("Your profile has been deleted.", "primary");
+    switchTab('register');
+}
+
+function prepopulateRegistrationForm() {
+    const myId = localStorage.getItem('my_profile_id');
+    const myProfile = State.participants.find(p => String(p.id) === String(myId));
+    if (!myProfile) return;
+
+    const form = document.getElementById('participantForm');
+    if (!form) return;
+
+    form.querySelector('input[name="name"]').value = myProfile.name;
+    form.querySelector('select[name="region"]').value = myProfile.region;
+    form.querySelector('input[name="experience"]').value = myProfile.experience;
+    form.querySelector('input[name="inactiveMonths"]').value = myProfile.inactiveMonths || 0;
+    
+    form.querySelector('textarea[name="bio"]').value = myProfile.bio || myProfile.skills;
+    form.querySelector('input[name="videoUrl"]').value = myProfile.videoUrl || '';
+}
+
+function openGradingModal(id) {
+    const p = State.participants.find(pt => String(pt.id) === String(id));
+    if (!p) return;
+
+    document.getElementById('gradingPerformerId').value = id;
+    document.getElementById('gradeJudgeA').value = p.judgeA || 0;
+    document.getElementById('gradeJudgeB').value = p.judgeB || 0;
+    document.getElementById('gradeJudgeC').value = p.judgeC || 0;
+
+    document.getElementById('gradingModal').style.display = 'flex';
+}
+
+function closeGradingModal() {
+    document.getElementById('gradingModal').style.display = 'none';
+}
+
+async function submitGrading(e) {
+    e.preventDefault();
+    const id = document.getElementById('gradingPerformerId').value;
+    const p = State.participants.find(pt => String(pt.id) === String(id));
+    if (!p) return;
+
+    const ja = parseInt(document.getElementById('gradeJudgeA').value) || 0;
+    const jb = parseInt(document.getElementById('gradeJudgeB').value) || 0;
+    const jc = parseInt(document.getElementById('gradeJudgeC').value) || 0;
+
+    p.judgeA = ja;
+    p.judgeB = jb;
+    p.judgeC = jc;
+    p.consistency = Math.round((ja + jb + jc) / 3);
+
+    if (_supabase) {
+        await _supabase.from('participants').update({
+            judgeA: ja,
+            judgeB: jb,
+            judgeC: jc,
+            consistency: p.consistency
+        }).eq('id', id);
+        logSync(`Successfully graded performer ${p.name} on cloud.`, "success");
+    }
+
+    saveToCache();
+    closeGradingModal();
+    renderParticipantRegistry();
+    renderConsistencyMatrix();
+    runKMeansAndAnomalies();
+    renderMyProfile();
+    if (State.selectedEvent) renderRecommendations();
+
+    showToast(`Grades updated for ${p.name}.`, "success");
+}
+
+window.renderMyProfile = renderMyProfile;
+window.deleteMyProfile = deleteMyProfile;
+window.prepopulateRegistrationForm = prepopulateRegistrationForm;
+window.openGradingModal = openGradingModal;
+window.closeGradingModal = closeGradingModal;
+window.submitGrading = submitGrading;
+window.selectEvent = selectEvent;
+window.deleteParticipant = deleteParticipant;
+window.switchTab = switchTab;
