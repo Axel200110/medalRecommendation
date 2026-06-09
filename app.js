@@ -590,15 +590,21 @@ window.optimizeTeam = () => {
 
 // --- UI RENDERING ---
 async function initApp() {
+    // Ensure lucide icons render safely
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+
     initTheme();
     setupEventListeners();
     
-    // Sync initial admin menu link states
+    // Always hide admin links on startup (user must login via PIN)
     document.querySelectorAll('.admin-link').forEach(el => {
-        el.style.display = State.isAdmin ? 'flex' : 'none';
+        el.style.display = 'none';
     });
+    State.isAdmin = false;
 
-    switchTab(State.activeTab); 
+    switchTab('dashboard');
     await loadData();
     renderEvents();
     renderParticipantRegistry();
@@ -612,7 +618,7 @@ async function initApp() {
         if (firstEventItem) {
             firstEventItem.click();
         }
-    }, 500);
+    }, 800);
 }
 
 function renderSkillChips() {
@@ -1164,7 +1170,20 @@ function showDetails(p) {
     };
 }
 
-window.onload = initApp;
+// Wait for all CDN scripts to be ready before initializing
+function waitForCDNAndInit() {
+    const ready = (
+        typeof lucide !== 'undefined' &&
+        typeof supabase !== 'undefined' &&
+        typeof brain !== 'undefined'
+    );
+    if (ready) {
+        initApp();
+    } else {
+        setTimeout(waitForCDNAndInit, 100);
+    }
+}
+window.addEventListener('load', waitForCDNAndInit);
 
 window.exportSPSS = () => {
     if (State.participants.length === 0) {
