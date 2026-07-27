@@ -8,8 +8,8 @@ window._supabase = _supabase; // Expose globally for debugging
 // --- BREVO EMAIL SERVICE CONFIGURATION ---
 const BREVO_HOST = 'smtp-relay.brevo.com';
 const BREVO_USER = 'b35cb8001@smtp-brevo.com';
-const BREVO_SMTP_PASS = 'xsmtpsib-f778e7713ce05ca925c37e1c6260323c2c4b529bfb4c2fef1857d5dba1e280a4-N3rVdbNHLXnSeuVP';
-const BREVO_API_KEY = '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';
+const BREVO_SMTP_PASS = ''; // Brevo disabled compromised key
+const BREVO_API_KEY = '';   // Brevo disabled compromised key
 const BREVO_SENDER_EMAIL = 'thuwanrajap076@gmail.com'; // Verified Brevo sender email
 const BREVO_SENDER_NAME = 'TALENT.PREMIUM';
 
@@ -2813,16 +2813,36 @@ window.adminPayTalent = function (reqId) {
     req.paymentSentAt = new Date().toISOString();
     saveHireRequests(req);
     renderHirePanel();
+    if (typeof renderMyBookings === 'function') renderMyBookings();
 
     showToast(`💳 Payment of LKR ${req.feeAmount.toLocaleString()} sent to ${req.performerName}!`, 'success');
     logSync(`Admin dispatched payment LKR ${req.feeAmount.toLocaleString()} to ${req.performerName} for ${req.eventName}`, 'success');
 
     // Email alert to talent regarding payment
-    const paymentEmailBody = `Hello ${req.performerName},\n\nPayment of LKR ${req.feeAmount.toLocaleString()} for "${req.eventName}" has been dispatched to your account.\n\nThank you for your performance!\n\nTALENT.PREMIUM Team`;
-    
-    setTimeout(() => {
-        showToast(`🎤 ${req.performerName} has been notified & emailed about payment receipt.`, 'primary');
-    }, 1000);
+    const paymentEmailBody = `
+<div style="font-family:sans-serif;max-width:600px;margin:0 auto;padding:2rem;background:#0f172a;color:#e2e8f0;border-radius:12px;">
+  <h2 style="color:#6366f1;margin-bottom:0.5rem;">💳 Payment Dispatched!</h2>
+  <p style="color:#94a3b8;margin-bottom:1.5rem;">Payment for your performance has been processed by TALENT.PREMIUM.</p>
+  <p>Dear <strong>${req.performerName}</strong>,</p>
+  <p>We are pleased to inform you that your fee for the event <strong>${req.eventName}</strong> has been successfully dispatched to your account.</p>
+  <table style="width:100%;border-collapse:collapse;margin:1.5rem 0;background:#1e293b;border-radius:8px;overflow:hidden;">
+    <tr><td style="padding:0.75rem 1rem;color:#94a3b8;border-bottom:1px solid #334155;">Event Name</td><td style="padding:0.75rem 1rem;font-weight:700;border-bottom:1px solid #334155;">${req.eventName}</td></tr>
+    <tr><td style="padding:0.75rem 1rem;color:#94a3b8;border-bottom:1px solid #334155;">Buyer</td><td style="padding:0.75rem 1rem;border-bottom:1px solid #334155;">${req.buyerName}</td></tr>
+    <tr><td style="padding:0.75rem 1rem;color:#94a3b8;">Dispatched Amount</td><td style="padding:0.75rem 1rem;font-weight:900;color:#10b981;font-size:1.1rem;">LKR ${Number(req.feeAmount).toLocaleString()}</td></tr>
+  </table>
+  <p style="color:#94a3b8;font-size:0.85rem;">Thank you for your outstanding artistic performance!</p>
+</div>`;
+
+    if (req.performerEmail) {
+        dispatchEmailNotification(
+            req.performerEmail,
+            req.performerName,
+            `💳 Payment Dispatched: LKR ${req.feeAmount.toLocaleString()} for ${req.eventName}`,
+            paymentEmailBody
+        );
+    } else {
+        showToast(`🎤 ${req.performerName} marked as paid! (No direct performer email registered)`, 'primary');
+    }
 };
 
 // ---- Admin: Delete hire request ----
