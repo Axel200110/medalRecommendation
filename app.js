@@ -8,8 +8,8 @@ window._supabase = _supabase; // Expose globally for debugging
 // --- BREVO EMAIL SERVICE CONFIGURATION ---
 const BREVO_HOST = 'smtp-relay.brevo.com';
 const BREVO_USER = 'b35cb8001@smtp-brevo.com';
-const BREVO_SMTP_PASS = ''; // Set via environment variables or secret manager
-const BREVO_API_KEY = '';   // Set via environment variables or secret manager
+const BREVO_SMTP_PASS = 'xsmtpsib-f778e7713ce05ca925c37e1c6260323c2c4b529bfb4c2fef1857d5dba1e280a4-N3rVdbNHLXnSeuVP';
+const BREVO_API_KEY = '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';
 const BREVO_SENDER_EMAIL = 'thuwanrajap076@gmail.com'; // Verified Brevo sender email
 const BREVO_SENDER_NAME = 'TALENT.PREMIUM';
 
