@@ -12,6 +12,7 @@
     <script src="https://cdn.jsdelivr.net/npm/brain.js"></script>
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <script src="https://smtpjs.com/v3/smtp.js"></script>
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
@@ -23,27 +24,63 @@
                 <i data-lucide="mic"></i>
                 <span>TALENT.PREMIUM</span>
             </div>
+
+            <!-- PORTAL SEGMENTED CONTROL -->
+            <div class="portal-selector">
+                <button class="portal-btn active" id="portalBuyerBtn" onclick="window.switchPortal('buyer')">
+                    <i data-lucide="shopping-bag"></i> Buyer Portal
+                </button>
+                <button class="portal-btn" id="portalPerformerBtn" onclick="window.switchPortal('performer')">
+                    <i data-lucide="mic"></i> Performer Portal
+                </button>
+                <button class="portal-btn" id="portalAdminBtn" onclick="window.switchPortal('admin')">
+                    <i data-lucide="shield-alert"></i> Admin <i data-lucide="lock" id="portalLockIcon" style="width:11px; height:11px; margin-left:2px;"></i>
+                </button>
+            </div>
+
+            <!-- DYNAMIC TABS BASED ON ACTIVE PORTAL -->
             <div class="nav-links">
-                <button class="nav-btn active" data-tab="dashboard">
-                    <i data-lucide="layout-dashboard"></i> Showcases
+                <!-- BUYER PORTAL TABS -->
+                <div class="portal-tabs-group" id="buyerTabs" style="display:flex; align-items:center; gap:0.4rem;">
+                    <button class="nav-btn active" data-tab="dashboard">
+                        <i data-lucide="layout-dashboard"></i> Showcases
+                    </button>
+                    <button class="nav-btn" data-tab="hire" id="navHireBtn">
+                        <i data-lucide="user-check"></i> Hire Talent
+                    </button>
+                    <button class="nav-btn" data-tab="myBookings" id="navMyBookingsBtn">
+                        <i data-lucide="receipt"></i> My Bookings
+                    </button>
+                </div>
+
+                <!-- PERFORMER PORTAL TABS -->
+                <div class="portal-tabs-group" id="performerTabs" style="display:none; align-items:center; gap:0.4rem;">
+                    <button class="nav-btn" data-tab="register">
+                        <i data-lucide="user-plus"></i> Register Profile
+                    </button>
+                    <button class="nav-btn" data-tab="profile" id="navProfileBtn">
+                        <i data-lucide="user"></i> My Profile
+                    </button>
+                </div>
+
+                <!-- ADMIN PORTAL TABS -->
+                <div class="portal-tabs-group" id="adminTabs" style="display:none; align-items:center; gap:0.4rem;">
+                    <button class="nav-btn" data-tab="hirePanel" id="navHirePanelBtn">
+                        <i data-lucide="briefcase"></i> Hire Panel
+                    </button>
+                    <button class="nav-btn" data-tab="management" id="navManagementBtn">
+                        <i data-lucide="users"></i> Talent Registry
+                    </button>
+                    <button class="nav-btn" data-tab="analytics" id="navAnalyticsBtn">
+                        <i data-lucide="sparkles"></i> Analytics Lab
+                    </button>
+                </div>
+
+                <div style="width:1px; height:20px; background:var(--border); margin:0 0.4rem"></div>
+                <button id="userAuthBtn" class="portal-btn" style="border: 1px solid var(--border); padding: 0.45rem 0.75rem;" onclick="window.openAuthModal()">
+                    <i data-lucide="user"></i> <span id="userAuthLabel">Log In</span>
                 </button>
-                <button class="nav-btn" data-tab="register">
-                    <i data-lucide="user-plus"></i> Register Profile
-                </button>
-                <button class="nav-btn" data-tab="profile" id="navProfileBtn">
-                    <i data-lucide="user"></i> My Profile
-                </button>
-                <button class="nav-btn admin-link" data-tab="management" id="navManagementBtn" style="display: none;">
-                    <i data-lucide="users"></i> Talent Registry
-                </button>
-                <button class="nav-btn admin-link" data-tab="analytics" id="navAnalyticsBtn" style="display: none;">
-                    <i data-lucide="sparkles"></i> Analytics Lab
-                </button>
-                <div style="width:1px; height:20px; background:var(--border); margin:0 0.5rem"></div>
-                <button id="adminToggleBtn" class="theme-toggle" onclick="toggleAdminMode()" title="Admin Lock: Restricted Access">
-                    <i data-lucide="lock"></i>
-                </button>
-                <button id="themeToggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle Light/Dark Mode">
+                <button id="themeToggle" class="theme-toggle" onclick="window.toggleTheme()" title="Toggle Light/Dark Mode">
                     <i data-lucide="sun"></i>
                 </button>
             </div>
@@ -51,6 +88,7 @@
                 <div class="status-dot"></div> Cloud Active
             </div>
         </nav>
+
 
         <!-- --- HERO SECTION --- -->
         <header class="hero">
@@ -150,9 +188,19 @@
                                 <label>Full Stage Name</label>
                                 <input type="text" name="name" placeholder="e.g. Elena Vance" required>
                             </div>
+                            <div style="display:flex; gap:1rem;">
+                                <div class="input-group" style="flex:1; margin-bottom:0;">
+                                    <label>Contact Phone</label>
+                                    <input type="tel" name="phone" placeholder="e.g. 077 123 4567">
+                                </div>
+                                <div class="input-group" style="flex:1; margin-bottom:0;">
+                                    <label>Email Address <span style="color:var(--accent-primary);font-size:0.7rem;">(for hire notifications)</span></label>
+                                    <input type="email" name="email" placeholder="e.g. talent@gmail.com">
+                                </div>
+                            </div>
                             <div class="input-group">
                                 <label>Sri Lankan Region / Opportunity</label>
-                                <select name="region" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+                                <select name="region" required>
                                     <option value="Western">Western (High Resource Access)</option>
                                     <option value="Central">Central (Moderate Resource Access)</option>
                                     <option value="Southern">Southern (Moderate Resource Access)</option>
@@ -167,11 +215,11 @@
                              <div style="display: flex; gap: 1rem; margin-bottom: 1rem;">
                                  <div class="input-group" style="flex:1; margin-bottom: 0;">
                                      <label>Industry Tenure (Yrs)</label>
-                                     <input type="number" name="experience" min="0" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+                                     <input type="number" name="experience" min="0" required>
                                  </div>
                                  <div class="input-group" style="flex:1; margin-bottom: 0;">
                                      <label>Months Inactive</label>
-                                     <input type="number" name="inactiveMonths" min="0" placeholder="e.g. 2" required style="width:100%; padding:0.8rem; border-radius:8px; border:1px solid var(--border); background:rgba(0,0,0,0.2); color:var(--text-primary);">
+                                     <input type="number" name="inactiveMonths" min="0" placeholder="e.g. 2" required>
                                  </div>
                              </div>
 
@@ -237,21 +285,123 @@
                             <div id="myProfileSkills" style="display: flex; flex-wrap: wrap; gap: 0.5rem; margin-top: 0.5rem"></div>
                         </div>
 
-                        <div id="myProfileMedia" class="glass-panel" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 2rem;">
+                        <div id="myProfileMedia" class="glass-panel" style="padding: 1.25rem; display: flex; flex-direction: column; gap: 0.75rem; margin-bottom: 1.5rem;">
                             <h4 style="margin: 0; display: flex; align-items: center; gap: 0.5rem; font-size: 0.85rem">
                                 <i data-lucide="video" style="color:var(--accent-primary)"></i> Showcase Media Clip
                             </h4>
                             <div id="myProfileVideoContainer"></div>
                         </div>
+
+                        <!-- PERFORMER GIG INVITES & PAYMENT NOTIFICATIONS -->
+                        <div class="glass-panel" style="padding: 1.25rem; margin-bottom: 2rem; background: rgba(16, 185, 129, 0.05); border: 1px solid rgba(16, 185, 129, 0.2);">
+                            <h4 style="margin: 0 0 1rem 0; display: flex; align-items: center; justify-content: space-between; font-size: 0.9rem; color: var(--accent-success);">
+                                <span><i data-lucide="calendar-check" style="margin-right:0.3rem"></i> My Gig Invites & Payments</span>
+                                <span class="tag" style="background: rgba(16, 185, 129, 0.2); color: var(--accent-success); font-size: 0.65rem;">PERFORMER DASHBOARD</span>
+                            </h4>
+                            <div id="myGigRequestsList" style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                <!-- Dynamically populated for this performer -->
+                            </div>
+                        </div>
                         
-                        <div style="display: flex; gap: 1rem; border-top: 1px solid var(--border); padding-top: 2rem; margin-top: 2rem;">
-                            <button class="primary-btn" onclick="prepopulateRegistrationForm(); switchTab('register');" style="background: var(--bg-deep); border: 1px solid var(--border); color: var(--text-primary) !important;">
-                                <i data-lucide="edit"></i> Update My Details
+                        <div style="display: flex; gap: 0.75rem; flex-wrap: wrap; border-top: 1px solid var(--border); padding-top: 2rem; margin-top: 2rem;">
+                            <button class="primary-btn" onclick="prepopulateRegistrationForm(); switchTab('register');" style="background: var(--bg-deep); border: 1px solid var(--border); color: var(--text-primary) !important; flex: 1;">
+                                <i data-lucide="edit"></i> Update Details
                             </button>
-                            <button class="primary-btn" onclick="deleteMyProfile()" style="background: var(--danger);">
-                                <i data-lucide="trash-2"></i> Delete My Profile
+                            <button class="primary-btn" onclick="logoutMyProfile()" style="background: rgba(99, 102, 241, 0.15); border: 1px solid var(--accent-primary); color: var(--accent-primary) !important; flex: 1;">
+                                <i data-lucide="log-out"></i> Log Out
+                            </button>
+                            <button class="primary-btn" onclick="deleteMyProfile()" style="background: var(--danger); flex: 1;">
+                                <i data-lucide="trash-2"></i> Delete Profile
                             </button>
                         </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: HIRE TALENT (PUBLIC) -->
+            <section id="hireSection" class="tab-pane">
+                <div style="max-width: 900px; margin: 0 auto;">
+                    <div class="glass-panel" style="padding: 2rem; margin-bottom: 2rem;">
+                        <div style="display: flex; align-items: center; gap: 1rem; margin-bottom: 0.5rem;">
+                            <i data-lucide="user-check" style="color: var(--accent-success); width: 28px; height: 28px;"></i>
+                            <h2 style="font-size: 1.6rem; font-weight: 900;">Hire a Talent</h2>
+                        </div>
+                        <p style="color: var(--text-secondary); font-size: 0.9rem; margin-left: 2.5rem;">Browse the AI-ranked talent pool, select the best performer for your event, and submit a hiring request with a bank payment slip.</p>
+                    </div>
+
+                    <!-- Buyer Info Form -->
+                    <div class="premium-form-card" style="margin-bottom: 2rem;">
+                        <h3 style="margin-bottom: 1.5rem; display:flex; align-items:center; gap:0.5rem;">
+                            <i data-lucide="contact-2" style="color:var(--accent-primary); width:20px; height:20px;"></i> Your Contact Details
+                        </h3>
+                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.5rem;">
+                            <div class="input-group" style="margin-bottom:0">
+                                <label>Your Full Name</label>
+                                <div class="form-input-container">
+                                    <i data-lucide="user"></i>
+                                    <input type="text" id="buyerName" placeholder="e.g. Kasun Perera" required>
+                                </div>
+                            </div>
+                            <div class="input-group" style="margin-bottom:0">
+                                <label>Contact Number</label>
+                                <div class="form-input-container">
+                                    <i data-lucide="phone"></i>
+                                    <input type="text" id="buyerPhone" placeholder="e.g. 077 123 4567" required>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="input-group" style="margin-top:1.5rem; margin-bottom:0">
+                            <label>Email Address</label>
+                            <div class="form-input-container">
+                                <i data-lucide="mail"></i>
+                                <input type="email" id="buyerEmail" placeholder="e.g. kasun@example.com">
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Talent Ranking for Hire -->
+                    <div class="glass-panel" style="padding: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1.5rem; flex-wrap: wrap; gap: 1rem;">
+                            <h3 style="display:flex; align-items:center; gap:0.5rem;">
+                                <i data-lucide="trophy" style="color:var(--accent-gold)"></i> AI-Ranked Talent Pool
+                            </h3>
+                            <div style="display:flex; gap:0.75rem; align-items:center; flex-wrap:wrap">
+                                <label style="font-size:0.8rem; font-weight:700; color:var(--text-secondary); margin:0">Filter Event:</label>
+                                <select id="hireEventFilter" style="padding:0.5rem 0.75rem; border-radius:8px; border:1px solid var(--border); background:var(--bg-deep); color:var(--text-primary); font-size:0.85rem;" onchange="renderHireTalentList()">
+                                </select>
+                            </div>
+                        </div>
+                        <div id="hireTalentList" style="display: flex; flex-direction: column; gap: 1rem;">
+                            <p style="text-align:center; padding:2rem; opacity:0.5">Loading talent rankings...</p>
+                        </div>
+                    </div>
+                </div>
+            </section>
+
+            <!-- TAB: MY BOOKINGS (BUYER PORTAL) -->
+            <section id="myBookingsSection" class="tab-pane">
+                <div style="max-width: 850px; margin: 0 auto;">
+                    <div class="glass-panel" style="padding: 2rem; margin-bottom: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div>
+                                <h2 style="display: flex; align-items: center; gap: 0.5rem; color: var(--accent-primary);">
+                                    <i data-lucide="receipt"></i> My Hire Bookings
+                                </h2>
+                                <p style="color: var(--text-secondary); font-size: 0.85rem; margin-top: 0.2rem;">
+                                    Track your talent booking submissions, verification statuses, and payment progress.
+                                </p>
+                            </div>
+                            <div style="display: flex; align-items: center; gap: 0.5rem;">
+                                <input type="email" id="buyerLookupEmail" placeholder="Enter your buyer email..." style="padding: 0.55rem 0.85rem; border-radius: 10px; border: 1px solid var(--border); background: var(--bg-deep); color: var(--text-primary); font-size: 0.82rem; width: 240px;" oninput="renderMyBookings()">
+                                <button class="primary-btn" onclick="renderMyBookings()" style="padding: 0.55rem 1rem;">
+                                    <i data-lucide="search"></i> Lookup
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="myBookingsList" style="display: flex; flex-direction: column; gap: 1rem;">
+                        <!-- Rendered dynamically -->
                     </div>
                 </div>
             </section>
@@ -327,9 +477,13 @@
                             <label style="display:flex; justify-content:space-between">Industry Tenure <span><span id="weightExpVal">10</span>%</span></label>
                             <input type="range" id="weightExp" class="cyber-slider" min="0" max="100" value="10">
                         </div>
-                        <button id="autoTuneBtn" class="primary-btn" onclick="autoTuneWeights()" style="margin-top:2rem; width: 100%;">
+                        <button id="autoTuneBtn" class="primary-btn" onclick="autoTuneWeights()" style="margin-top:1.5rem; width: 100%;">
                             <i data-lucide="zap"></i> Auto-Tune Calibration
                         </button>
+                        <button id="saveWeightsBtn" class="primary-btn" onclick="saveWeightsToCloud()" style="margin-top:0.75rem; width: 100%; background: linear-gradient(135deg, #10b981, #059669); border: none;">
+                            <i data-lucide="cloud-upload"></i> Save Settings to Cloud
+                        </button>
+                        <div id="weightSaveStatus" style="text-align:center; font-size:0.7rem; color:var(--text-muted); margin-top:0.5rem; min-height:1.2rem;"></div>
                     </div>
 
                     <div style="display:flex; flex-direction:column; gap:2rem;">
@@ -400,7 +554,88 @@
                 </div>
             </section>
 
+            <!-- ============================================
+                 TAB: ADMIN HIRE PANEL (ADMIN ONLY)
+                 ============================================ -->
+            <section id="hirePanelSection" class="tab-pane">
+                <div style="margin-bottom: 2rem;">
+                    <div class="glass-panel" style="padding: 2rem;">
+                        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+                            <div style="display:flex; align-items:center; gap:1rem;">
+                                <i data-lucide="briefcase" style="color:var(--accent-primary); width:32px; height:32px;"></i>
+                                <div>
+                                    <h2 style="font-size:1.6rem; font-weight:900;">Admin Hire Panel</h2>
+                                    <p style="font-size:0.85rem; color:var(--text-secondary); margin-top:0.2rem;">Manage all incoming hire requests, approve payments, and dispatch talent fees.</p>
+                                </div>
+                            </div>
+                            <div style="display:flex; align-items:center; gap:0.75rem;">
+                                <span class="status-badge" style="background:rgba(99,102,241,0.1); color:var(--accent-primary)">Admin Access Only</span>
+                                <button onclick="renderHirePanel()" style="padding:0.4rem 0.75rem; border-radius:8px; border:1px solid var(--border); background:var(--bg-deep); color:var(--text-secondary); cursor:pointer; font-size:0.8rem; display:flex; align-items:center; gap:0.4rem;"><i data-lucide="refresh-cw" style="width:13px; height:13px;"></i> Refresh</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Stats Row -->
+                <div class="hire-stats-row">
+                    <div class="hire-stat-card">
+                        <div class="stat-val" id="statTotal" style="color:var(--text-primary)">0</div>
+                        <div class="stat-label">Total Requests</div>
+                    </div>
+                    <div class="hire-stat-card">
+                        <div class="stat-val" id="statPending" style="color:var(--accent-gold)">0</div>
+                        <div class="stat-label">Awaiting Review</div>
+                    </div>
+                    <div class="hire-stat-card">
+                        <div class="stat-val" id="statApproved" style="color:var(--accent-success)">0</div>
+                        <div class="stat-label">Approved Hires</div>
+                    </div>
+                    <div class="hire-stat-card">
+                        <div class="stat-val" id="statPaid" style="color:var(--accent-primary)">0</div>
+                        <div class="stat-label">Payments Sent</div>
+                    </div>
+                </div>
+
+                <!-- Filter Tabs -->
+                <div style="display:flex; gap:0.5rem; margin-bottom:1.5rem; flex-wrap:wrap;">
+                    <button class="hire-filter-btn active" data-filter="all" onclick="filterHireRequests('all', this)" style="padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); background:var(--accent-primary); color:white; font-weight:700; cursor:pointer; font-size:0.82rem;">All</button>
+                    <button class="hire-filter-btn" data-filter="pending" onclick="filterHireRequests('pending', this)" style="padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); background:var(--bg-deep); color:var(--text-primary); font-weight:700; cursor:pointer; font-size:0.82rem;">⏳ Pending</button>
+                    <button class="hire-filter-btn" data-filter="approved" onclick="filterHireRequests('approved', this)" style="padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); background:var(--bg-deep); color:var(--text-primary); font-weight:700; cursor:pointer; font-size:0.82rem;">✅ Approved</button>
+                    <button class="hire-filter-btn" data-filter="paid" onclick="filterHireRequests('paid', this)" style="padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); background:var(--bg-deep); color:var(--text-primary); font-weight:700; cursor:pointer; font-size:0.82rem;">💳 Paid</button>
+                    <button class="hire-filter-btn" data-filter="rejected" onclick="filterHireRequests('rejected', this)" style="padding:0.5rem 1rem; border-radius:8px; border:1px solid var(--border); background:var(--bg-deep); color:var(--text-primary); font-weight:700; cursor:pointer; font-size:0.82rem;">❌ Rejected</button>
+                </div>
+
+                <!-- Hire Requests List -->
+                <div id="hireRequestsList" class="hire-requests-grid">
+                    <div class="glass-panel" style="padding:3rem; text-align:center;">
+                        <i data-lucide="inbox" style="width:48px; height:48px; opacity:0.2; margin-bottom:1rem;"></i>
+                        <p style="opacity:0.5">No hire requests yet.</p>
+                    </div>
+                </div>
+            </section>
+
         </main>
+
+        <!-- --- ADMIN AUTH MODAL --- -->
+        <div id="adminAuthModal" class="modal-overlay" style="display:none;">
+            <div class="modal-content" style="position:relative; max-width: 400px; padding: 2rem; text-align:center;">
+                <button class="close-modal" onclick="closeAdminAuthModal()"><i data-lucide="x"></i></button>
+                <div style="display:inline-flex; padding:0.8rem; background:rgba(99,102,241,0.1); border-radius:50%; margin-bottom:1rem; color:var(--accent-primary);">
+                    <i data-lucide="shield-check" style="width:32px; height:32px;"></i>
+                </div>
+                <h3 style="margin-bottom:0.5rem; font-size:1.4rem;">Admin Authorization</h3>
+                <p style="font-size:0.85rem; color:var(--text-secondary); margin-bottom:1.5rem;">Enter the administrative PIN code to access the Hire Panel and management tools.</p>
+                
+                <form onsubmit="submitAdminPin(event)">
+                    <div class="input-group" style="margin-bottom:1.2rem;">
+                        <input type="password" id="adminPinInput" placeholder="Enter PIN (e.g. 2001)" style="width:100%; text-align:center; font-size:1.3rem; letter-spacing:0.3rem; padding:0.8rem; border-radius:10px; border:1px solid var(--border); background:var(--bg-deep); color:var(--text-primary);" required autofocus>
+                    </div>
+                    <button type="submit" class="primary-btn" style="width:100%; background:linear-gradient(135deg,var(--accent-primary),var(--accent-secondary)); padding:0.8rem;">
+                        <i data-lucide="unlock"></i> Unlock Admin Panel
+                    </button>
+                </form>
+            </div>
+        </div>
 
         <!-- --- REPORT MODAL --- -->
         <div id="detailsModal" class="modal-overlay">
@@ -432,6 +667,114 @@
                     </div>
                     <button type="submit" class="primary-btn" style="margin-top: 1.5rem; width: 100%;">
                         <i data-lucide="save"></i> Save Grades
+                    </button>
+                </form>
+            </div>
+        </div>
+
+        <!-- --- HIRE TALENT MODAL --- -->
+        <div id="hireModal" class="modal-overlay">
+            <div class="modal-content" style="position:relative; max-width:560px;">
+                <button class="close-modal" onclick="closeHireModal()"><i data-lucide="x"></i></button>
+                <div style="display:flex; align-items:center; gap:0.75rem; margin-bottom:0.5rem;">
+                    <i data-lucide="user-check" style="color:var(--accent-success); width:24px; height:24px;"></i>
+                    <h3 style="color:var(--accent-success);">Confirm Hire Request</h3>
+                </div>
+                <p style="font-size:0.82rem; color:var(--text-secondary); margin-bottom:1.5rem;">Upload your bank payment slip and enter your contact details. The admin will review and notify you upon approval.</p>
+
+                <!-- Performer Summary Card -->
+                <div style="background:var(--bg-deep); border-radius:12px; padding:1rem; margin-bottom:1.25rem; display:flex; align-items:center; gap:1rem;">
+                    <div class="avatar" id="hireModalAvatar" style="width:48px; height:48px; font-size:0.9rem; background:linear-gradient(135deg,var(--accent-primary),var(--accent-secondary)); color:white;">--</div>
+                    <div>
+                        <div id="hireModalName" style="font-weight:900; font-size:1.1rem;">--</div>
+                        <div id="hireModalEvent" style="font-size:0.8rem; color:var(--text-secondary);">--</div>
+                        <div id="hireModalScore" style="font-size:0.75rem; color:var(--accent-primary); font-weight:700; margin-top:0.2rem;">--</div>
+                    </div>
+                </div>
+
+                <!-- Contact Details Summary (read from the form above) -->
+                <div id="hireModalContactSummary" style="background:rgba(99,102,241,0.06); border:1px solid rgba(99,102,241,0.2); border-radius:12px; padding:1rem; margin-bottom:1.25rem; font-size:0.82rem;">
+                    <p style="font-size:0.7rem; font-weight:800; text-transform:uppercase; letter-spacing:0.08em; color:var(--accent-primary); margin-bottom:0.6rem;">👤 Booking As</p>
+                    <div style="display:flex; flex-wrap:wrap; gap:0.5rem 1.5rem; color:var(--text-secondary);">
+                        <span id="hireModalBuyerName" style="font-weight:700; color:var(--text-primary);">—</span>
+                        <span id="hireModalBuyerPhone"></span>
+                        <span id="hireModalBuyerEmail"></span>
+                    </div>
+                </div>
+
+                <!-- Section: Event Details -->
+                <div class="input-group">
+                    <label>Event / Occasion Description *</label>
+                    <input type="text" id="hireEventDesc" placeholder="e.g. Wedding reception on Aug 15, Kandy" required>
+                </div>
+
+                <div class="input-group">
+                    <label>Agreed Fee (LKR) *</label>
+                    <input type="number" id="hireFeeAmount" placeholder="e.g. 50000" min="0" required>
+                </div>
+
+                <!-- Section: Payment Slip -->
+                <div class="input-group" style="margin-bottom:0">
+                    <label>Bank Payment Slip *</label>
+                    <div class="slip-upload-zone" id="slipUploadZone" onclick="document.getElementById('slipFileInput').click()" ondragover="handleSlipDragOver(event)" ondrop="handleSlipDrop(event)" ondragleave="this.classList.remove('drag-over')">
+                        <input type="file" id="slipFileInput" accept="image/*,.pdf" style="display:none" onchange="handleSlipUpload(this)">
+                        <div id="slipUploadContent">
+                            <div class="upload-icon">🏦</div>
+                            <p style="font-weight:700; margin-bottom:0.25rem;">Click or drag to upload payment slip</p>
+                            <p style="font-size:0.75rem; color:var(--text-muted);">Accepts: JPG, PNG, PDF — auto-compressed for fast upload</p>
+                        </div>
+                        <img id="slipPreviewImg" class="slip-preview" style="display:none;" alt="Payment Slip Preview">
+                    </div>
+                </div>
+
+                <input type="hidden" id="hirePerformerId">
+                <input type="hidden" id="hireSlipDataUrl">
+
+                <button class="primary-btn" onclick="submitHireRequest()" style="margin-top:1.5rem; background:linear-gradient(135deg,#10b981,#059669); width:100%;">
+                    <i data-lucide="send"></i> Submit Hire Request
+                </button>
+            </div>
+        </div>
+
+        <!-- --- SLIP LIGHTBOX --- -->
+        <div id="slipLightbox" class="slip-lightbox" onclick="this.style.display='none'">
+            <img id="slipLightboxImg" src="" alt="Payment Slip">
+        </div>
+
+        <!-- --- USER AUTH MODAL --- -->
+        <div id="userAuthModal" class="modal-overlay">
+            <div class="modal-content" style="position:relative; max-width: 400px; padding: 2rem;">
+                <button class="close-modal" onclick="closeAuthModal()"><i data-lucide="x"></i></button>
+                <div style="text-align:center; margin-bottom: 1.5rem;">
+                    <div class="brand" style="justify-content: center; font-size: 1.2rem; margin-bottom: 0.3rem;">
+                        <i data-lucide="mic" style="color:var(--accent-primary)"></i>
+                        <span>TALENT.PREMIUM</span>
+                    </div>
+                    <p style="font-size: 0.8rem; color: var(--text-secondary);" id="authModalSubtitle">Sign in to access your Dual Buyer & Performer account</p>
+                </div>
+
+                <!-- AUTH TABS: LOGIN vs SIGNUP -->
+                <div style="display:flex; background:var(--bg-deep); border-radius:10px; padding:3px; margin-bottom:1.5rem; border:1px solid var(--border)">
+                    <button id="authTabLogin" class="portal-btn active" style="flex:1; justify-content:center;" onclick="switchAuthTab('login')">Log In</button>
+                    <button id="authTabSignup" class="portal-btn" style="flex:1; justify-content:center;" onclick="switchAuthTab('signup')">Sign Up</button>
+                </div>
+
+                <form id="userAuthForm" onsubmit="handleUserAuthSubmit(event)">
+                    <div class="input-group" id="authNameGroup" style="display:none;">
+                        <label>Full Name *</label>
+                        <input type="text" id="authNameInput" placeholder="e.g. Kasun Fernando">
+                    </div>
+                    <div class="input-group">
+                        <label>Email Address *</label>
+                        <input type="email" id="authEmailInput" placeholder="e.g. kasun@example.com" required>
+                    </div>
+                    <div class="input-group">
+                        <label>Password *</label>
+                        <input type="password" id="authPasswordInput" placeholder="••••••••" required>
+                    </div>
+
+                    <button type="submit" id="authSubmitBtn" class="primary-btn" style="width: 100%; margin-top: 1rem;">
+                        <i data-lucide="log-in"></i> <span id="authSubmitText">Sign In</span>
                     </button>
                 </form>
             </div>
