@@ -1,17 +1,9 @@
 // --- AESTHETIC STATE MANAGEMENT ---
-// --- DATABASE INITIALIZATION ---
-const SUPABASE_URL = 'https://nqeheytvkivsmzjvhuel.supabase.co';
-const SUPABASE_ANON_KEY = 'sb_publishable_3mBlXPxtpQwb8hpbvHEA5Q_Di96aaSa'; 
-const _supabase = (typeof supabase !== 'undefined') ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY) : null;
+// --- DATABASE & SERVICE INITIALIZATION (Loaded from config.js) ---
+const _supabase = (typeof supabase !== 'undefined' && typeof SUPABASE_URL !== 'undefined' && typeof SUPABASE_ANON_KEY !== 'undefined')
+    ? supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
+    : null;
 window._supabase = _supabase; // Expose globally for debugging
-
-// --- BREVO EMAIL SERVICE CONFIGURATION ---
-const BREVO_HOST = 'smtp-relay.brevo.com';
-const BREVO_USER = 'b35cb8001@smtp-brevo.com';
-const BREVO_SMTP_PASS = ''; // Brevo disabled compromised key
-const BREVO_API_KEY = '';   // Brevo disabled compromised key
-const BREVO_SENDER_EMAIL = 'thuwanrajap076@gmail.com'; // Verified Brevo sender email
-const BREVO_SENDER_NAME = 'TALENT.PREMIUM';
 
 const State = {
     participants: [],
@@ -1285,19 +1277,139 @@ function updateAdminUI() {
     }
 
     renderParticipantRegistry();
+    renderEvents();
     if (State.isAdmin) renderHirePanel();
     if (window.lucide) window.lucide.createIcons();
 }
 
 function renderEvents() {
     const list = document.getElementById('eventList');
-    list.innerHTML = State.events.map(ev => `
-        <div class="event-item" onclick="selectEvent(${ev.id}, this)">
-            <h4>${ev.name}</h4>
-            <div class="tags">${ev.requirements.map(r => `<span class="tag">${r}</span>`).join('')}</div>
-        </div>
-    `).join('');
+    const analyticsList = document.getElementById('analyticsEventsList');
+
+    // Header action for Admin (Add Event button)
+    const addBtn = document.getElementById('adminAddEventBtn');
+    if (addBtn) {
+        addBtn.style.display = State.isAdmin ? 'inline-flex' : 'none';
+    }
+
+    if (!State.events || State.events.length === 0) {
+        if (list) list.innerHTML = '<p style="padding:1rem; opacity:0.5; text-align:center;">No active events.</p>';
+        if (analyticsList) analyticsList.innerHTML = '<p style="padding:0.5rem; opacity:0.5; text-align:center;">No events created yet.</p>';
+        return;
+    }
+
+    const html = State.events.map(ev => {
+        const isSelected = State.selectedEvent && State.selectedEvent.id === ev.id ? 'active' : '';
+        const deleteBtn = State.isAdmin ? `
+            <button onclick="deleteEvent(${ev.id}, event)" title="Delete Event (Admin Only)" style="background:rgba(239,68,68,0.15); color:#ef4444; border:none; width:22px; height:22px; border-radius:50%; display:inline-flex; align-items:center; justify-content:center; cursor:pointer; font-size:0.75rem; transition:transform 0.2s;" onmouseenter="this.style.transform='scale(1.2)'" onmouseleave="this.style.transform='scale(1)'">
+                ✕
+            </button>
+        ` : '';
+
+        return `
+        <div class="event-item ${isSelected}" onclick="selectEvent(${ev.id}, this)">
+            <div style="display:flex; align-items:center; justify-content:space-between; width:100%;">
+                <h4 style="margin:0;">${escapeHtml(ev.name)}</h4>
+                ${deleteBtn}
+            </div>
+            <div class="tags" style="margin-top:0.4rem;">${ev.requirements.map(r => `<span class="tag">${escapeHtml(r)}</span>`).join('')}</div>
+        </div>`;
+    }).join('');
+
+    if (list) list.innerHTML = html;
+    if (analyticsList) analyticsList.innerHTML = html;
+
+    if (window.lucide) window.lucide.createIcons();
 }
+
+window.openCreateEventModal = function () {
+    if (!State.isAdmin) {
+        showToast('🔒 Admin PIN required to create events.', 'warning');
+        return;
+    }
+    const modal = document.getElementById('createEventModal');
+    if (modal) {
+        modal.style.display = 'flex';
+        if (window.lucide) window.lucide.createIcons();
+    }
+};
+
+window.closeCreateEventModal = function () {
+    const modal = document.getElementById('createEventModal');
+    if (modal) modal.style.display = 'none';
+};
+
+window.submitNewEvent = function (e) {
+    if (e) e.preventDefault();
+    if (!State.isAdmin) {
+        showToast('🔒 Only Admin can create events.', 'warning');
+        return;
+    }
+
+    const nameInput = document.getElementById('newEventName');
+    const descInput = document.getElementById('newEventDesc');
+    const reqInput = document.getElementById('newEventRequirements');
+
+    if (!nameInput || !descInput || !reqInput) return;
+
+    const name = nameInput.value.trim();
+    const desc = descInput.value.trim();
+    const reqStr = reqInput.value.trim();
+
+    if (!name || !desc || !reqStr) {
+        showToast('⚠️ Please fill in all fields.', 'warning');
+        return;
+    }
+
+    const requirements = reqStr.split(',').map(s => s.trim()).filter(Boolean);
+
+    const newEv = {
+        id: Date.now(),
+        name: name,
+        description: desc,
+        requirements: requirements
+    };
+
+    State.events.push(newEv);
+    saveToCache();
+
+    nameInput.value = '';
+    descInput.value = '';
+    reqInput.value = '';
+
+    closeCreateEventModal();
+    renderEvents();
+    showToast(`✅ Event "${name}" published successfully!`, 'success');
+};
+
+window.deleteEvent = function (id, e) {
+    if (e) e.stopPropagation();
+    if (!State.isAdmin) {
+        showToast('🔒 Only Admin can delete events.', 'warning');
+        return;
+    }
+
+    if (!confirm('Are you sure you want to delete this event?')) return;
+
+    State.events = State.events.filter(ev => ev.id !== id);
+    if (State.selectedEvent && State.selectedEvent.id === id) {
+        State.selectedEvent = State.events[0] || null;
+        if (!State.selectedEvent) {
+            const noSel = document.getElementById('noSelection');
+            const evAna = document.getElementById('eventAnalytics');
+            if (noSel) noSel.style.display = 'block';
+            if (evAna) evAna.style.display = 'none';
+        } else {
+            document.getElementById('targetEventName').textContent = State.selectedEvent.name;
+            document.getElementById('targetEventDesc').textContent = State.selectedEvent.description;
+            renderRecommendations();
+        }
+    }
+
+    saveToCache();
+    renderEvents();
+    showToast('🗑️ Event deleted.', 'primary');
+};
 
 function selectEvent(id, el) {
     State.selectedEvent = State.events.find(e => e.id === id);
@@ -1618,13 +1730,35 @@ function showDetails(p) {
 
     draw();
     modal.style.display = 'flex';
-    document.querySelector('.close-modal').onclick = () => {
-        if (radarChartInstance) {
-            radarChartInstance.destroy();
-        }
-        modal.style.display = 'none';
-    };
+    
+    // Save radar chart instance globally to destroy on close
+    window._activeRadarChart = radarChartInstance;
+
+    const closeBtn = modal.querySelector('.close-modal');
+    if (closeBtn) {
+        closeBtn.onclick = window.closeDetailsModal;
+    }
 }
+
+window.closeDetailsModal = function () {
+    if (window._activeRadarChart) {
+        try { window._activeRadarChart.destroy(); } catch (e) {}
+        window._activeRadarChart = null;
+    }
+    const modal = document.getElementById('detailsModal');
+    if (modal) modal.style.display = 'none';
+};
+
+// Global backdrop click handler to close any modal when clicking outside modal content
+window.addEventListener('click', (e) => {
+    if (e.target && e.target.classList && e.target.classList.contains('modal-overlay')) {
+        if (e.target.id === 'detailsModal') {
+            window.closeDetailsModal();
+        } else {
+            e.target.style.display = 'none';
+        }
+    }
+});
 
 // Wait for all CDN scripts to be ready before initializing
 function waitForCDNAndInit() {
@@ -2259,7 +2393,14 @@ window.renderHireTalentList = function () {
         const rankLabel = ['🥇 Top Pick', '🥈 Runner Up', '🥉 3rd Place'][idx] || `#${idx + 1}`;
 
         let actionBtn;
-        if (existingReq) {
+        const isSelfProfile = State.currentUser && (
+            (p.email && p.email.toLowerCase() === State.currentUser.email.toLowerCase()) ||
+            (p.name && p.name.toLowerCase() === State.currentUser.name.toLowerCase())
+        );
+
+        if (isSelfProfile) {
+            actionBtn = `<span class="tag" style="background:rgba(99,102,241,0.15); color:var(--accent-primary); border:1px solid var(--accent-primary); font-weight:700;"><i data-lucide="user" style="width:13px;height:13px;margin-right:4px;"></i> Your Profile</span>`;
+        } else if (existingReq) {
             const statusLabels = { pending: '⏳ Request Sent', approved: '✅ Hired!' };
             actionBtn = `<span class="hired-badge"><i data-lucide="check-circle" style="width:14px;height:14px;"></i> ${statusLabels[existingReq.status] || existingReq.status}</span>`;
         } else {
@@ -2303,6 +2444,15 @@ window.openHireModal = function (performerId, eventId) {
     const p = State.participants.find(pt => String(pt.id) === String(performerId));
     const event = State.events.find(e => e.id === parseInt(eventId));
     if (!p || !event) return;
+
+    // Guard: Prevent self-hiring
+    if (State.currentUser && (
+        (p.email && p.email.toLowerCase() === State.currentUser.email.toLowerCase()) ||
+        (p.name && p.name.toLowerCase() === State.currentUser.name.toLowerCase())
+    )) {
+        showToast('⚠️ You cannot hire your own Performer Profile!', 'warning');
+        return;
+    }
 
     // Validate buyer contact details filled in the page form
     const buyerName  = document.getElementById('buyerName')?.value?.trim();
@@ -2896,5 +3046,343 @@ window.viewSlipLightbox = function (reqId) {
     const lb = document.getElementById('slipLightbox');
     document.getElementById('slipLightboxImg').src = req.slipDataUrl;
     lb.style.display = 'flex';
+};
+
+// ============================================
+// REAL-TIME PRIVATE CHAT ENGINE (SUPABASE REALTIME)
+// Each buyer/performer has a PRIVATE 1-on-1 thread with Admin.
+// Admin can switch between conversations. Users only see their own.
+// ============================================
+
+/**
+ * All conversations stored as: { [conversationId]: { messages: [], clientName, clientRole, clientEmail } }
+ * conversationId = sanitized email or unique key for the client
+ */
+const ChatState = {
+    conversations: JSON.parse(localStorage.getItem('portal_chat_conversations') || '{}'),
+    activeConversationId: null,   // Which conversation is currently viewed
+    isOpen: false,
+    unreadCounts: JSON.parse(localStorage.getItem('portal_chat_unread') || '{}'), // { convId: count }
+};
+
+// --- Helpers ---
+function getChatConversationId() {
+    // For admin: use the selected conversation from dropdown
+    if (State.isAdmin) {
+        return ChatState.activeConversationId || null;
+    }
+    // For buyer/performer: derive from their email
+    const email = State.currentUser?.email || document.getElementById('buyerName')?.value || null;
+    if (!email) return null;
+    return 'conv_' + email.toLowerCase().replace(/[^a-z0-9]/g, '_');
+}
+
+function getMyClientIdentity() {
+    const name = State.currentUser?.name || document.getElementById('buyerName')?.value || 'Guest';
+    const email = State.currentUser?.email || '';
+    const role = (State.currentPortal === 'performer') ? 'performer' : 'buyer';
+    return { name, email, role };
+}
+
+function saveChatConversations() {
+    // Keep only last 50 messages per conversation to limit storage
+    const trimmed = {};
+    for (const [cid, conv] of Object.entries(ChatState.conversations)) {
+        trimmed[cid] = {
+            ...conv,
+            messages: (conv.messages || []).slice(-50)
+        };
+    }
+    localStorage.setItem('portal_chat_conversations', JSON.stringify(trimmed));
+}
+
+function saveChatUnread() {
+    localStorage.setItem('portal_chat_unread', JSON.stringify(ChatState.unreadCounts));
+}
+
+function getTotalUnread() {
+    if (State.isAdmin) {
+        // Admin sees total unread across ALL conversations
+        return Object.values(ChatState.unreadCounts).reduce((a, b) => a + b, 0);
+    }
+    // Client sees unread only for their own conversation
+    const myConvId = getChatConversationId();
+    return myConvId ? (ChatState.unreadCounts[myConvId] || 0) : 0;
+}
+
+function ensureConversation(convId, clientName, clientRole, clientEmail) {
+    if (!ChatState.conversations[convId]) {
+        ChatState.conversations[convId] = {
+            messages: [],
+            clientName: clientName || 'Unknown',
+            clientRole: clientRole || 'buyer',
+            clientEmail: clientEmail || ''
+        };
+    } else {
+        // Update metadata if provided (name may change)
+        if (clientName) ChatState.conversations[convId].clientName = clientName;
+        if (clientRole) ChatState.conversations[convId].clientRole = clientRole;
+        if (clientEmail) ChatState.conversations[convId].clientEmail = clientEmail;
+    }
+}
+
+// --- Toggle Chat Drawer ---
+window.toggleChatDrawer = function () {
+    const drawer = document.getElementById('chatDrawer');
+    if (!drawer) return;
+    ChatState.isOpen = !ChatState.isOpen;
+    drawer.style.display = ChatState.isOpen ? 'flex' : 'none';
+
+    if (ChatState.isOpen) {
+        // Show/hide admin bar
+        const adminBar = document.getElementById('chatAdminBar');
+        if (adminBar) adminBar.style.display = State.isAdmin ? 'block' : 'none';
+
+        if (State.isAdmin) {
+            renderAdminConversationList();
+            // Auto-select first conversation if none selected
+            if (!ChatState.activeConversationId) {
+                const convIds = Object.keys(ChatState.conversations);
+                if (convIds.length > 0) {
+                    ChatState.activeConversationId = convIds[0];
+                }
+            }
+        } else {
+            // For buyer/performer, auto-create their conversation thread
+            const identity = getMyClientIdentity();
+            const convId = getChatConversationId();
+            if (convId) {
+                ensureConversation(convId, identity.name, identity.role, identity.email);
+                ChatState.activeConversationId = convId;
+                saveChatConversations();
+            }
+        }
+
+        // Clear unread for active conversation
+        if (ChatState.activeConversationId) {
+            ChatState.unreadCounts[ChatState.activeConversationId] = 0;
+            saveChatUnread();
+        }
+
+        updateChatBadge();
+        renderChatMessages();
+        const msgBox = document.getElementById('chatMessages');
+        if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
+    }
+};
+
+// --- Admin: Render Conversation Dropdown ---
+function renderAdminConversationList() {
+    const select = document.getElementById('chatConversationSelect');
+    if (!select) return;
+
+    const convIds = Object.keys(ChatState.conversations);
+    if (convIds.length === 0) {
+        select.innerHTML = '<option value="">No conversations yet</option>';
+        return;
+    }
+
+    select.innerHTML = convIds.map(cid => {
+        const conv = ChatState.conversations[cid];
+        const roleIcon = conv.clientRole === 'performer' ? '🎤' : '🛍️';
+        const roleLabel = conv.clientRole === 'performer' ? 'Performer' : 'Buyer';
+        const unread = ChatState.unreadCounts[cid] || 0;
+        const unreadTag = unread > 0 ? ` (${unread} new)` : '';
+        const selected = cid === ChatState.activeConversationId ? 'selected' : '';
+        return `<option value="${cid}" ${selected}>${roleIcon} ${conv.clientName} — ${roleLabel}${unreadTag}</option>`;
+    }).join('');
+}
+
+// --- Admin: Select Conversation ---
+window.selectAdminChat = function (convId) {
+    if (!convId) return;
+    ChatState.activeConversationId = convId;
+    // Clear unread for this conversation
+    ChatState.unreadCounts[convId] = 0;
+    saveChatUnread();
+    updateChatBadge();
+    renderChatMessages();
+    renderAdminConversationList(); // refresh unread tags
+    const msgBox = document.getElementById('chatMessages');
+    if (msgBox) msgBox.scrollTop = msgBox.scrollHeight;
+};
+
+// --- Badge ---
+function updateChatBadge() {
+    const badge = document.getElementById('chatBadge');
+    if (!badge) return;
+    const total = getTotalUnread();
+    if (total > 0) {
+        badge.textContent = total;
+        badge.style.display = 'flex';
+    } else {
+        badge.style.display = 'none';
+    }
+}
+
+// --- Render Messages for Active Conversation ---
+function renderChatMessages() {
+    const container = document.getElementById('chatMessages');
+    if (!container) return;
+
+    const convId = ChatState.activeConversationId;
+    const conv = convId ? ChatState.conversations[convId] : null;
+    const messages = conv ? (conv.messages || []) : [];
+
+    if (!convId || messages.length === 0) {
+        const emptyMsg = State.isAdmin && !convId
+            ? '📋 Select a client conversation from the dropdown above to begin.'
+            : '👋 Welcome to TALENT.PREMIUM Support! Send a message to start a private conversation with Admin.';
+        container.innerHTML = `
+        <div class="chat-msg system">
+            <div class="chat-bubble">${emptyMsg}</div>
+        </div>`;
+        return;
+    }
+
+    container.innerHTML = messages.map(m => {
+        const isMe = (m.role === 'admin' && State.isAdmin) || 
+                     (m.role !== 'admin' && !State.isAdmin);
+
+        const roleLabel = m.role === 'admin' 
+            ? '🛡️ Admin' 
+            : m.role === 'performer' 
+            ? `🎤 ${m.sender || 'Performer'}` 
+            : `🛍️ ${m.sender || 'Buyer'}`;
+
+        const typeClass = isMe ? 'sent' : 'received';
+
+        return `
+        <div class="chat-msg ${typeClass}">
+            <div class="sender-tag">${roleLabel} • ${new Date(m.timestamp).toLocaleTimeString([], {hour: '2-digit', minute:'2-digit'})}</div>
+            <div class="chat-bubble">${escapeHtml(m.text)}</div>
+        </div>`;
+    }).join('');
+
+    container.scrollTop = container.scrollHeight;
+}
+
+function escapeHtml(text) {
+    return text.replace(/[&<>"']/g, function(m) {
+        return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;' }[m];
+    });
+}
+
+// --- Supabase Realtime Channel (single global channel, messages routed by conversationId) ---
+let portalChatChannel = null;
+if (_supabase) {
+    try {
+        portalChatChannel = _supabase.channel('portal-chat-room');
+        portalChatChannel
+            .on('broadcast', { event: 'chat_msg' }, payload => {
+                const incomingMsg = payload.payload;
+                if (!incomingMsg || !incomingMsg.conversationId) return;
+
+                const convId = incomingMsg.conversationId;
+
+                // Ensure conversation exists
+                ensureConversation(convId, incomingMsg.clientName, incomingMsg.clientRole, incomingMsg.clientEmail);
+
+                // Deduplicate
+                const conv = ChatState.conversations[convId];
+                if (conv.messages.some(m => m.id === incomingMsg.id)) return;
+
+                // Check if this message is relevant to me
+                const myConvId = getChatConversationId();
+                const isRelevant = State.isAdmin || convId === myConvId;
+                if (!isRelevant) return; // Not my conversation, ignore
+
+                // Don't add messages I sent myself (they're already added locally)
+                const isMySentMsg = (incomingMsg.role === 'admin' && State.isAdmin) ||
+                                    (incomingMsg.role !== 'admin' && !State.isAdmin && convId === myConvId);
+                if (isMySentMsg && incomingMsg.senderSessionId === ChatState._sessionId) return;
+
+                conv.messages.push(incomingMsg);
+                saveChatConversations();
+
+                // Handle unread / notification
+                const isViewingThisConv = ChatState.isOpen && ChatState.activeConversationId === convId;
+                if (!isViewingThisConv) {
+                    ChatState.unreadCounts[convId] = (ChatState.unreadCounts[convId] || 0) + 1;
+                    saveChatUnread();
+                    updateChatBadge();
+                    const senderLabel = incomingMsg.role === 'admin' ? '🛡️ Admin' : incomingMsg.sender;
+                    showToast(`💬 New message from ${senderLabel}: "${incomingMsg.text.substring(0, 30)}..."`, 'primary');
+                } else {
+                    renderChatMessages();
+                    if (State.isAdmin) renderAdminConversationList();
+                }
+            })
+            .subscribe();
+    } catch (e) {
+        console.log('Supabase chat channel init skipped.');
+    }
+}
+
+// Unique session ID to prevent self-echo from broadcast
+ChatState._sessionId = 'sess_' + Date.now() + '_' + Math.random().toString(36).substr(2, 6);
+
+// --- Send Message ---
+window.sendChatMessage = function (e) {
+    if (e) e.preventDefault();
+    const input = document.getElementById('chatInput');
+    if (!input) return;
+    const text = input.value.trim();
+    if (!text) return;
+
+    let convId = ChatState.activeConversationId;
+
+    // For non-admin users, ensure conversation exists
+    if (!State.isAdmin) {
+        const identity = getMyClientIdentity();
+        convId = getChatConversationId();
+        if (!convId) {
+            showToast('⚠️ Please log in or enter your name to start a chat.', 'warning');
+            return;
+        }
+        ensureConversation(convId, identity.name, identity.role, identity.email);
+        ChatState.activeConversationId = convId;
+    }
+
+    if (!convId) {
+        showToast('⚠️ Please select a conversation first.', 'warning');
+        return;
+    }
+
+    const conv = ChatState.conversations[convId];
+    const senderName = State.isAdmin ? 'Admin' : (State.currentUser ? State.currentUser.name : (document.getElementById('buyerName')?.value || 'Guest'));
+
+    const msg = {
+        id: 'msg_' + Date.now() + '_' + Math.random().toString(36).substr(2, 4),
+        conversationId: convId,
+        sender: senderName,
+        role: State.isAdmin ? 'admin' : (State.currentPortal === 'performer' ? 'performer' : 'buyer'),
+        text: text,
+        timestamp: new Date().toISOString(),
+        senderSessionId: ChatState._sessionId,
+        // Metadata for conversation creation on remote side
+        clientName: conv.clientName,
+        clientRole: conv.clientRole,
+        clientEmail: conv.clientEmail
+    };
+
+    conv.messages.push(msg);
+    saveChatConversations();
+    input.value = '';
+    renderChatMessages();
+    if (State.isAdmin) renderAdminConversationList();
+
+    // Broadcast via Supabase Realtime
+    if (portalChatChannel) {
+        try {
+            portalChatChannel.send({
+                type: 'broadcast',
+                event: 'chat_msg',
+                payload: msg
+            });
+        } catch (err) {
+            console.log('Realtime broadcast offline.');
+        }
+    }
 };
 
