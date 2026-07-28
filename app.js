@@ -3402,6 +3402,8 @@ window.resetSystemData = async function () {
         return;
     }
 
+    showToast('Resetting system... please wait.', 'primary');
+
     // Clear local storage
     localStorage.removeItem('aesthetic_participants');
     localStorage.removeItem('aesthetic_events');
@@ -3423,40 +3425,107 @@ window.resetSystemData = async function () {
         HireState.requests = [];
     }
 
-    // Restore clean default seeds
-    State.events = [
-        { id: 1, name: 'Derana Dream Star Finale', description: 'National level vocal and stage performance competition.', requirements: ['Vocal Range', 'Stage Presence', 'Baila', 'Sinhala Diction'] },
-        { id: 2, name: 'Corporate Emcee Summit (Colombo)', description: 'Professional hosting for high-end corporate galas.', requirements: ['Public Speaking', 'Trilingual', 'Professionalism'] },
-        { id: 3, name: 'Kandy Cultural Pageant', description: 'Traditional arts and drumming showcase.', requirements: ['Kandyan Dance', 'Geta Bera', 'Choreography'] }
-    ];
+    // ---- STEP 1: Capture ALL current IDs BEFORE overwriting State ----
+    // Must happen first: once State.participants = seedParticipants, real user IDs are lost
+    const currentParticipantIds = (State.participants || []).map(p => String(p.id)).filter(Boolean);
+    const currentHireIds = (HireState && HireState.requests ? HireState.requests : []).map(r => String(r.id)).filter(Boolean);
 
-    State.participants = [
+    // Fetch live IDs from Supabase to catch any cloud-only registered performers
+    let cloudParticipantIds = [];
+    if (_supabase) {
+        try {
+            const { data: cloudRows } = await _supabase.from('participants').select('id');
+            if (cloudRows) cloudParticipantIds = cloudRows.map(r => String(r.id));
+        } catch(e) {}
+    }
+    // Merge local + cloud IDs so ALL performers are deleted (including registered users)
+    const allParticipantIdsToDelete = [...new Set([...currentParticipantIds, ...cloudParticipantIds])];
+
+    // ---- STEP 2: Define clean seed data ----
+    const seedParticipants = [
         { id: 'seed-1', name: 'Elena Vance', region: 'Western', experience: 12, consistency: 92, skills: 'Vocal Range, Diction, Opera, Stage Presence', judgeA: 90, judgeB: 95, judgeC: 91, inactiveMonths: 1, email: 'elena@talent.com', phone: '+94 77 123 4567', rate: 'LKR 85,000 / event' },
         { id: 'seed-2', name: 'Julian Marsh', region: 'Central', experience: 5, consistency: 85, skills: 'Public Speaking, Emceeing, Professionalism, Humor', judgeA: 82, judgeB: 88, judgeC: 85, inactiveMonths: 4, email: 'julian@talent.com', phone: '+94 71 987 6543', rate: 'LKR 50,000 / event' },
         { id: 'seed-3', name: 'Sarah Sings', region: 'Uva', experience: 8, consistency: 78, skills: 'Vocal Range, Pop, Stage Presence, Improvisation', judgeA: 75, judgeB: 80, judgeC: 79, inactiveMonths: 12, email: 'sarah@talent.com', phone: '+94 75 456 7890', rate: 'LKR 65,000 / event' }
     ];
 
-    State.selectedEvent = State.events[0];
+    const seedEvents = [
+        { id: 1, name: 'Derana Dream Star Finale', description: 'National level vocal and stage performance competition.', requirements: ['Vocal Range', 'Stage Presence', 'Baila', 'Sinhala Diction'] },
+        { id: 2, name: 'Corporate Emcee Summit (Colombo)', description: 'Professional hosting for high-end corporate galas.', requirements: ['Public Speaking', 'Trilingual', 'Professionalism'] },
+        { id: 3, name: 'Kandy Cultural Pageant', description: 'Traditional arts and drumming showcase.', requirements: ['Kandyan Dance', 'Geta Bera', 'Choreography'] }
+    ];
+
+    // ---- STEP 3: Supabase Cloud Delete (using IDs captured in Step 1) ----
+    if (_supabase) {
+        // Delete each participant by exact ID - works even with RLS enabled
+        for (const pid of allParticipantIdsToDelete) {
+            try { await _supabase.from('participants').delete().eq('id', pid); } catch(e) {}
+        }
+        // Broad .in() delete as backup (works when RLS is off)
+        if (allParticipantIdsToDelete.length > 0) {
+            try { await _supabase.from('participants').delete().in('id', allParticipantIdsToDelete); } catch(e) {}
+        }
+
+        // Upsert seed performers (insert or update on conflict - no duplicate key errors)
+        try {
+            const { error: upsertErr } = await _supabase
+                .from('participants')
+                .upsert(seedParticipants, { onConflict: 'id' });
+            if (!upsertErr) {
+                logSync('Cloud participants reset - seed performers restored.', 'success');
+            } else {
+                console.log('Upsert note:', upsertErr.message);
+                logSync('Cloud upsert skipped - seed data saved to local cache.', 'remote');
+            }
+        } catch(e) {
+            console.log('Cloud participants upsert note:', e);
+        }
+
+        // Delete hire_requests by per-ID (IDs captured in Step 1, before State reset)
+        for (const hid of currentHireIds) {
+            try { await _supabase.from('hire_requests').delete().eq('id', hid); } catch(e) {}
+        }
+        if (currentHireIds.length > 0) {
+            try { await _supabase.from('hire_requests').delete().in('id', currentHireIds); } catch(e) {}
+        }
+        logSync('Cloud hire requests cleared.', 'success');
+    }
+
+    // ---- STEP 4: Apply seed data to in-memory State ----
+    State.events = seedEvents;
+    State.participants = seedParticipants;
+    State.selectedEvent = seedEvents[0];
     State.weights = { skill: 0.60, consist: 0.30, exp: 0.10 };
 
-    // Reset Chat State
+    // Reset Chat State in memory
     if (typeof ChatState !== 'undefined') {
         ChatState.conversations = {};
         ChatState.activeConversationId = null;
-        ChatState.unreadCount = {};
+        ChatState.unreadCounts = {};
         if (typeof renderChatMessages === 'function') renderChatMessages();
-        if (typeof renderChatAdminBar === 'function') renderChatAdminBar();
+        if (typeof renderAdminConversationList === 'function') renderAdminConversationList();
+        if (typeof updateChatBadge === 'function') updateChatBadge();
     }
 
+    // Persist seed data to localStorage so browser refresh loads correctly too
     saveToCache();
-    runKMeansAndAnomalies();
+
+    // Re-render all panels including Showcase/AI Recommendations
     renderEvents();
     renderParticipantRegistry();
     if (typeof renderHirePanel === 'function') renderHirePanel();
     if (typeof renderMyProfile === 'function') renderMyProfile();
-    if (State.selectedEvent && typeof renderRecommendations === 'function') renderRecommendations();
 
-    showToast('🔄 System Data Reset to Factory Seed Defaults!', 'success');
+    // Re-run ML pipeline then refresh the AI Showcase
+    runKMeansAndAnomalies();
+    renderConsistencyMatrix();
+    if (State.selectedEvent && typeof renderRecommendations === 'function') {
+        renderRecommendations();
+    }
+
+    if (window.lucide) window.lucide.createIcons();
+
+    showToast('System fully reset! Showcase & AI data refreshed with seed defaults.', 'success');
+    logSync('Admin Factory Reset complete - Cloud + Local synced with clean seed data.', 'system');
 };
 
 
