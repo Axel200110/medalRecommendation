@@ -19,80 +19,78 @@
 
     <div id="app">
         <!-- --- NAVIGATION SYSTEM --- -->
-        <div style="display:flex; align-items:center; gap:0.75rem; position:sticky; top:1rem; z-index:1000; margin-bottom:2.5rem;">
-            <nav class="nav-bar" style="margin-bottom:0; flex:1;">
-                <div class="brand">
-                    <i data-lucide="mic"></i>
-                    <span>TALENT.PREMIUM</span>
-                </div>
-
-                <!-- PORTAL SEGMENTED CONTROL -->
-                <div class="portal-selector">
-                    <button class="portal-btn active" id="portalBuyerBtn" onclick="window.switchPortal('buyer')">
-                        <i data-lucide="shopping-bag"></i> Buyer Portal
-                    </button>
-                    <button class="portal-btn" id="portalPerformerBtn" onclick="window.switchPortal('performer')">
-                        <i data-lucide="mic"></i> Performer Portal
-                    </button>
-                    <button class="portal-btn" id="portalAdminBtn" onclick="window.switchPortal('admin')">
-                        <i data-lucide="shield-alert"></i> Admin <i data-lucide="lock" id="portalLockIcon" style="width:11px; height:11px; margin-left:2px;"></i>
-                    </button>
-                </div>
-
-                <!-- DYNAMIC TABS BASED ON ACTIVE PORTAL -->
-                <div class="nav-links">
-                    <!-- BUYER PORTAL TABS -->
-                    <div class="portal-tabs-group" id="buyerTabs" style="display:flex; align-items:center; gap:0.4rem;">
-                        <button class="nav-btn active" data-tab="dashboard">
-                            <i data-lucide="layout-dashboard"></i> Showcases
-                        </button>
-                        <button class="nav-btn" data-tab="hire" id="navHireBtn">
-                            <i data-lucide="user-check"></i> Hire Talent
-                        </button>
-                        <button class="nav-btn" data-tab="myBookings" id="navMyBookingsBtn">
-                            <i data-lucide="receipt"></i> My Bookings
-                        </button>
-                    </div>
-
-                    <!-- PERFORMER PORTAL TABS -->
-                    <div class="portal-tabs-group" id="performerTabs" style="display:none; align-items:center; gap:0.4rem;">
-                        <button class="nav-btn" data-tab="register">
-                            <i data-lucide="user-plus"></i> Register Profile
-                        </button>
-                        <button class="nav-btn" data-tab="profile" id="navProfileBtn">
-                            <i data-lucide="user"></i> My Profile
-                        </button>
-                    </div>
-
-                    <!-- ADMIN PORTAL TABS -->
-                    <div class="portal-tabs-group" id="adminTabs" style="display:none; align-items:center; gap:0.4rem;">
-                        <button class="nav-btn" data-tab="dashboard" id="navAdminShowcasesBtn">
-                            <i data-lucide="megaphone"></i> Showcases & Events
-                        </button>
-                        <button class="nav-btn" data-tab="hirePanel" id="navHirePanelBtn">
-                            <i data-lucide="briefcase"></i> Hire Panel
-                        </button>
-                        <button class="nav-btn" data-tab="management" id="navManagementBtn">
-                            <i data-lucide="users"></i> Talent Registry
-                        </button>
-                        <button class="nav-btn" data-tab="analytics" id="navAnalyticsBtn">
-                            <i data-lucide="sparkles"></i> Analytics Lab
-                        </button>
-                    </div>
-
-                    <div style="width:1px; height:20px; background:var(--border); margin:0 0.2rem"></div>
-                    <button id="userAuthBtn" class="portal-btn" style="border: 1px solid var(--border); padding: 0.45rem 0.75rem; white-space: nowrap; flex-shrink: 0;" onclick="window.openAuthModal()">
-                        <i data-lucide="user"></i> <span id="userAuthLabel" style="white-space: nowrap;">Log In</span>
-                    </button>
-                    <button id="themeToggle" class="theme-toggle" onclick="window.toggleTheme()" title="Toggle Light/Dark Mode">
-                        <i data-lucide="sun"></i>
-                    </button>
-                </div>
-            </nav>
-            <div id="cloudStatus" class="status-badge" title="Database Synchronization Status" style="flex-shrink:0;">
-                <div class="status-dot"></div> Cloud Active
+        <nav class="nav-bar">
+            <div class="brand">
+                <i data-lucide="mic"></i>
+                <span>TALENT.PREMIUM</span>
             </div>
-        </div>
+
+            <!-- PORTAL SEGMENTED CONTROL -->
+            <div class="portal-selector">
+                <button class="portal-btn active" id="portalBuyerBtn" onclick="window.switchPortal('buyer')">
+                    <i data-lucide="shopping-bag"></i> Buyer Portal
+                </button>
+                <button class="portal-btn" id="portalPerformerBtn" onclick="window.switchPortal('performer')">
+                    <i data-lucide="mic"></i> Performer Portal
+                </button>
+                <button class="portal-btn" id="portalAdminBtn" onclick="window.switchPortal('admin')">
+                    <i data-lucide="shield-alert"></i> Admin <i data-lucide="lock" id="portalLockIcon" style="width:11px; height:11px; margin-left:2px;"></i>
+                </button>
+            </div>
+
+            <!-- DYNAMIC TABS BASED ON ACTIVE PORTAL -->
+            <div class="nav-links">
+                <!-- BUYER PORTAL TABS -->
+                <div class="portal-tabs-group" id="buyerTabs" style="display:flex; align-items:center; gap:0.4rem;">
+                    <button class="nav-btn active" data-tab="dashboard">
+                        <i data-lucide="layout-dashboard"></i> Showcases
+                    </button>
+                    <button class="nav-btn" data-tab="hire" id="navHireBtn">
+                        <i data-lucide="user-check"></i> Hire Talent
+                    </button>
+                    <button class="nav-btn" data-tab="myBookings" id="navMyBookingsBtn">
+                        <i data-lucide="receipt"></i> My Bookings
+                    </button>
+                </div>
+
+                <!-- PERFORMER PORTAL TABS -->
+                <div class="portal-tabs-group" id="performerTabs" style="display:none; align-items:center; gap:0.4rem;">
+                    <button class="nav-btn" data-tab="register">
+                        <i data-lucide="user-plus"></i> Register Profile
+                    </button>
+                    <button class="nav-btn" data-tab="profile" id="navProfileBtn">
+                        <i data-lucide="user"></i> My Profile
+                    </button>
+                </div>
+
+                <!-- ADMIN PORTAL TABS -->
+                <div class="portal-tabs-group" id="adminTabs" style="display:none; align-items:center; gap:0.4rem;">
+                    <button class="nav-btn" data-tab="dashboard" id="navAdminShowcasesBtn">
+                        <i data-lucide="megaphone"></i> Showcases & Events
+                    </button>
+                    <button class="nav-btn" data-tab="hirePanel" id="navHirePanelBtn">
+                        <i data-lucide="briefcase"></i> Hire Panel
+                    </button>
+                    <button class="nav-btn" data-tab="management" id="navManagementBtn">
+                        <i data-lucide="users"></i> Talent Registry
+                    </button>
+                    <button class="nav-btn" data-tab="analytics" id="navAnalyticsBtn">
+                        <i data-lucide="sparkles"></i> Analytics Lab
+                    </button>
+                </div>
+
+                <div style="width:1px; height:20px; background:var(--border); margin:0 0.2rem"></div>
+                <button id="userAuthBtn" class="portal-btn" style="border: 1px solid var(--border); padding: 0.45rem 0.75rem; white-space: nowrap; flex-shrink: 0;" onclick="window.openAuthModal()">
+                    <i data-lucide="user"></i> <span id="userAuthLabel" style="white-space: nowrap;">Log In</span>
+                </button>
+                <button id="themeToggle" class="theme-toggle" onclick="window.toggleTheme()" title="Toggle Light/Dark Mode">
+                    <i data-lucide="sun"></i>
+                </button>
+                <div id="cloudStatus" class="status-badge" title="Database Synchronization Status">
+                    <div class="status-dot"></div> Cloud Active
+                </div>
+            </div>
+        </nav>
 
 
         <!-- --- HERO SECTION --- -->

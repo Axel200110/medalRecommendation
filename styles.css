@@ -81,10 +81,11 @@ body {
     backdrop-filter: blur(var(--glass-blur));
     border: 1px solid var(--border);
     border-radius: var(--radius-lg);
-    padding: 0.6rem 1.25rem;
+    padding: 0.55rem 1rem;
     display: flex;
     justify-content: space-between;
     align-items: center;
+    width: 100%;
     margin-bottom: 2.5rem;
     box-shadow: var(--shadow-md);
     position: sticky;
@@ -892,32 +893,35 @@ body:not(.dark-mode) .audit-grid td {
     gap: 2rem;
 }
 
-@media (max-width: 1100px) {
-    .management-grid {
-        grid-template-columns: 1fr;
-    }
-}
-
 /* --- RESPONSIVE QUERIES --- */
 @media (max-width: 1200px) {
     .dashboard-grid { grid-template-columns: 300px 1fr; }
     aside:last-child { display: none; } /* Hide feed on medium screens */
 }
 
+@media (max-width: 1100px) {
+    .management-grid { grid-template-columns: 1fr; }
+    .nav-header-wrapper { flex-wrap: wrap; justify-content: center; }
+    .nav-bar { flex-wrap: wrap; justify-content: center; gap: 0.75rem; padding: 0.75rem; }
+    .portal-selector { margin: 0.25rem 0; }
+    .nav-links { flex-wrap: wrap; justify-content: center; }
+    #cloudStatus { align-self: center; }
+}
+
 @media (max-width: 992px) {
     .dashboard-grid { grid-template-columns: 1fr; }
     .analytics-dashboard { grid-template-columns: 1fr; }
-    .nav-bar { flex-direction: column; gap: 1rem; padding: 1rem; height: auto; position: static; }
-    .nav-links { flex-wrap: wrap; justify-content: center; }
 }
 
 @media (max-width: 768px) {
-    body { padding: 1rem; }
-    .hero h1 { font-size: 2.5rem; }
+    body { padding: 0.75rem; }
+    .hero { padding: 1.5rem 1rem; }
+    .hero h1 { font-size: 2.1rem; }
     .medalist-card { flex-direction: column; text-align: center; }
     .score-num { margin: 0; }
     .cluster-grid { grid-template-columns: 1fr; }
     #managementSection > div { grid-template-columns: 1fr !important; }
+    .hire-stats-row { grid-template-columns: 1fr 1fr; gap: 0.75rem; }
     
     /* Analytics & Modal Responsive Fixes */
     .audit-table-wrapper { overflow-x: auto; }
