@@ -941,6 +941,11 @@ window.saveWeightsToCloud = async function () {
                     if (pID) forensics.id = pID;
                     else forensics.id = Date.now();
 
+                    // Automatically remove demo seed performers when a real performer registers
+                    if (State.participants.some(p => String(p.id).startsWith('seed-'))) {
+                        State.participants = State.participants.filter(p => !String(p.id).startsWith('seed-'));
+                    }
+
                     State.participants.push(forensics);
                     localStorage.setItem('my_profile_id', forensics.id);
                 }
@@ -3385,4 +3390,73 @@ window.sendChatMessage = function (e) {
         }
     }
 };
+
+// ---- ADMIN FACTORY RESET SYSTEM ----
+window.resetSystemData = async function () {
+    if (!State.isAdmin) {
+        showToast('🔒 Admin authorization required.', 'warning');
+        return;
+    }
+
+    if (!confirm('⚠️ Are you sure you want to reset all system data?\n\nThis will clear all test hire requests, custom events, registered performers, and chat messages, restoring clean initial defaults.')) {
+        return;
+    }
+
+    // Clear local storage
+    localStorage.removeItem('aesthetic_participants');
+    localStorage.removeItem('aesthetic_events');
+    localStorage.removeItem('aesthetic_weights');
+    localStorage.removeItem('hire_requests');
+    localStorage.removeItem('portal_hire_requests');
+    localStorage.removeItem('portal_users');
+    localStorage.removeItem('portal_chat_conversations');
+    localStorage.removeItem('portal_chat_unread');
+    localStorage.removeItem('my_profile_id');
+
+    // Reset Hire State in memory & Supabase
+    if (typeof HireState !== 'undefined') {
+        if (_supabase && HireState.requests && HireState.requests.length > 0) {
+            for (const r of HireState.requests) {
+                try { await _supabase.from('hire_requests').delete().eq('id', r.id); } catch(e) {}
+            }
+        }
+        HireState.requests = [];
+    }
+
+    // Restore clean default seeds
+    State.events = [
+        { id: 1, name: 'Derana Dream Star Finale', description: 'National level vocal and stage performance competition.', requirements: ['Vocal Range', 'Stage Presence', 'Baila', 'Sinhala Diction'] },
+        { id: 2, name: 'Corporate Emcee Summit (Colombo)', description: 'Professional hosting for high-end corporate galas.', requirements: ['Public Speaking', 'Trilingual', 'Professionalism'] },
+        { id: 3, name: 'Kandy Cultural Pageant', description: 'Traditional arts and drumming showcase.', requirements: ['Kandyan Dance', 'Geta Bera', 'Choreography'] }
+    ];
+
+    State.participants = [
+        { id: 'seed-1', name: 'Elena Vance', region: 'Western', experience: 12, consistency: 92, skills: 'Vocal Range, Diction, Opera, Stage Presence', judgeA: 90, judgeB: 95, judgeC: 91, inactiveMonths: 1, email: 'elena@talent.com', phone: '+94 77 123 4567', rate: 'LKR 85,000 / event' },
+        { id: 'seed-2', name: 'Julian Marsh', region: 'Central', experience: 5, consistency: 85, skills: 'Public Speaking, Emceeing, Professionalism, Humor', judgeA: 82, judgeB: 88, judgeC: 85, inactiveMonths: 4, email: 'julian@talent.com', phone: '+94 71 987 6543', rate: 'LKR 50,000 / event' },
+        { id: 'seed-3', name: 'Sarah Sings', region: 'Uva', experience: 8, consistency: 78, skills: 'Vocal Range, Pop, Stage Presence, Improvisation', judgeA: 75, judgeB: 80, judgeC: 79, inactiveMonths: 12, email: 'sarah@talent.com', phone: '+94 75 456 7890', rate: 'LKR 65,000 / event' }
+    ];
+
+    State.selectedEvent = State.events[0];
+    State.weights = { skill: 0.60, consist: 0.30, exp: 0.10 };
+
+    // Reset Chat State
+    if (typeof ChatState !== 'undefined') {
+        ChatState.conversations = {};
+        ChatState.activeConversationId = null;
+        ChatState.unreadCount = {};
+        if (typeof renderChatMessages === 'function') renderChatMessages();
+        if (typeof renderChatAdminBar === 'function') renderChatAdminBar();
+    }
+
+    saveToCache();
+    runKMeansAndAnomalies();
+    renderEvents();
+    renderParticipantRegistry();
+    if (typeof renderHirePanel === 'function') renderHirePanel();
+    if (typeof renderMyProfile === 'function') renderMyProfile();
+    if (State.selectedEvent && typeof renderRecommendations === 'function') renderRecommendations();
+
+    showToast('🔄 System Data Reset to Factory Seed Defaults!', 'success');
+};
+
 

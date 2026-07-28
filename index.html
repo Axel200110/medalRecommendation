@@ -19,78 +19,80 @@
 
     <div id="app">
         <!-- --- NAVIGATION SYSTEM --- -->
-        <nav class="nav-bar">
-            <div class="brand">
-                <i data-lucide="mic"></i>
-                <span>TALENT.PREMIUM</span>
-            </div>
+        <div style="display:flex; align-items:center; gap:0.75rem; position:sticky; top:1rem; z-index:1000; margin-bottom:2.5rem;">
+            <nav class="nav-bar" style="margin-bottom:0; flex:1;">
+                <div class="brand">
+                    <i data-lucide="mic"></i>
+                    <span>TALENT.PREMIUM</span>
+                </div>
 
-            <!-- PORTAL SEGMENTED CONTROL -->
-            <div class="portal-selector">
-                <button class="portal-btn active" id="portalBuyerBtn" onclick="window.switchPortal('buyer')">
-                    <i data-lucide="shopping-bag"></i> Buyer Portal
-                </button>
-                <button class="portal-btn" id="portalPerformerBtn" onclick="window.switchPortal('performer')">
-                    <i data-lucide="mic"></i> Performer Portal
-                </button>
-                <button class="portal-btn" id="portalAdminBtn" onclick="window.switchPortal('admin')">
-                    <i data-lucide="shield-alert"></i> Admin <i data-lucide="lock" id="portalLockIcon" style="width:11px; height:11px; margin-left:2px;"></i>
-                </button>
-            </div>
-
-            <!-- DYNAMIC TABS BASED ON ACTIVE PORTAL -->
-            <div class="nav-links">
-                <!-- BUYER PORTAL TABS -->
-                <div class="portal-tabs-group" id="buyerTabs" style="display:flex; align-items:center; gap:0.4rem;">
-                    <button class="nav-btn active" data-tab="dashboard">
-                        <i data-lucide="layout-dashboard"></i> Showcases
+                <!-- PORTAL SEGMENTED CONTROL -->
+                <div class="portal-selector">
+                    <button class="portal-btn active" id="portalBuyerBtn" onclick="window.switchPortal('buyer')">
+                        <i data-lucide="shopping-bag"></i> Buyer Portal
                     </button>
-                    <button class="nav-btn" data-tab="hire" id="navHireBtn">
-                        <i data-lucide="user-check"></i> Hire Talent
+                    <button class="portal-btn" id="portalPerformerBtn" onclick="window.switchPortal('performer')">
+                        <i data-lucide="mic"></i> Performer Portal
                     </button>
-                    <button class="nav-btn" data-tab="myBookings" id="navMyBookingsBtn">
-                        <i data-lucide="receipt"></i> My Bookings
+                    <button class="portal-btn" id="portalAdminBtn" onclick="window.switchPortal('admin')">
+                        <i data-lucide="shield-alert"></i> Admin <i data-lucide="lock" id="portalLockIcon" style="width:11px; height:11px; margin-left:2px;"></i>
                     </button>
                 </div>
 
-                <!-- PERFORMER PORTAL TABS -->
-                <div class="portal-tabs-group" id="performerTabs" style="display:none; align-items:center; gap:0.4rem;">
-                    <button class="nav-btn" data-tab="register">
-                        <i data-lucide="user-plus"></i> Register Profile
+                <!-- DYNAMIC TABS BASED ON ACTIVE PORTAL -->
+                <div class="nav-links">
+                    <!-- BUYER PORTAL TABS -->
+                    <div class="portal-tabs-group" id="buyerTabs" style="display:flex; align-items:center; gap:0.4rem;">
+                        <button class="nav-btn active" data-tab="dashboard">
+                            <i data-lucide="layout-dashboard"></i> Showcases
+                        </button>
+                        <button class="nav-btn" data-tab="hire" id="navHireBtn">
+                            <i data-lucide="user-check"></i> Hire Talent
+                        </button>
+                        <button class="nav-btn" data-tab="myBookings" id="navMyBookingsBtn">
+                            <i data-lucide="receipt"></i> My Bookings
+                        </button>
+                    </div>
+
+                    <!-- PERFORMER PORTAL TABS -->
+                    <div class="portal-tabs-group" id="performerTabs" style="display:none; align-items:center; gap:0.4rem;">
+                        <button class="nav-btn" data-tab="register">
+                            <i data-lucide="user-plus"></i> Register Profile
+                        </button>
+                        <button class="nav-btn" data-tab="profile" id="navProfileBtn">
+                            <i data-lucide="user"></i> My Profile
+                        </button>
+                    </div>
+
+                    <!-- ADMIN PORTAL TABS -->
+                    <div class="portal-tabs-group" id="adminTabs" style="display:none; align-items:center; gap:0.4rem;">
+                        <button class="nav-btn" data-tab="dashboard" id="navAdminShowcasesBtn">
+                            <i data-lucide="megaphone"></i> Showcases & Events
+                        </button>
+                        <button class="nav-btn" data-tab="hirePanel" id="navHirePanelBtn">
+                            <i data-lucide="briefcase"></i> Hire Panel
+                        </button>
+                        <button class="nav-btn" data-tab="management" id="navManagementBtn">
+                            <i data-lucide="users"></i> Talent Registry
+                        </button>
+                        <button class="nav-btn" data-tab="analytics" id="navAnalyticsBtn">
+                            <i data-lucide="sparkles"></i> Analytics Lab
+                        </button>
+                    </div>
+
+                    <div style="width:1px; height:20px; background:var(--border); margin:0 0.2rem"></div>
+                    <button id="userAuthBtn" class="portal-btn" style="border: 1px solid var(--border); padding: 0.45rem 0.75rem; white-space: nowrap; flex-shrink: 0;" onclick="window.openAuthModal()">
+                        <i data-lucide="user"></i> <span id="userAuthLabel" style="white-space: nowrap;">Log In</span>
                     </button>
-                    <button class="nav-btn" data-tab="profile" id="navProfileBtn">
-                        <i data-lucide="user"></i> My Profile
+                    <button id="themeToggle" class="theme-toggle" onclick="window.toggleTheme()" title="Toggle Light/Dark Mode">
+                        <i data-lucide="sun"></i>
                     </button>
                 </div>
-
-                <!-- ADMIN PORTAL TABS -->
-                <div class="portal-tabs-group" id="adminTabs" style="display:none; align-items:center; gap:0.4rem;">
-                    <button class="nav-btn" data-tab="dashboard" id="navAdminShowcasesBtn">
-                        <i data-lucide="megaphone"></i> Showcases & Events
-                    </button>
-                    <button class="nav-btn" data-tab="hirePanel" id="navHirePanelBtn">
-                        <i data-lucide="briefcase"></i> Hire Panel
-                    </button>
-                    <button class="nav-btn" data-tab="management" id="navManagementBtn">
-                        <i data-lucide="users"></i> Talent Registry
-                    </button>
-                    <button class="nav-btn" data-tab="analytics" id="navAnalyticsBtn">
-                        <i data-lucide="sparkles"></i> Analytics Lab
-                    </button>
-                </div>
-
-                <div style="width:1px; height:20px; background:var(--border); margin:0 0.4rem"></div>
-                <button id="userAuthBtn" class="portal-btn" style="border: 1px solid var(--border); padding: 0.45rem 0.75rem;" onclick="window.openAuthModal()">
-                    <i data-lucide="user"></i> <span id="userAuthLabel">Log In</span>
-                </button>
-                <button id="themeToggle" class="theme-toggle" onclick="window.toggleTheme()" title="Toggle Light/Dark Mode">
-                    <i data-lucide="sun"></i>
-                </button>
-            </div>
-            <div id="cloudStatus" class="status-badge" title="Database Synchronization Status">
+            </nav>
+            <div id="cloudStatus" class="status-badge" title="Database Synchronization Status" style="flex-shrink:0;">
                 <div class="status-dot"></div> Cloud Active
             </div>
-        </nav>
+        </div>
 
 
         <!-- --- HERO SECTION --- -->
@@ -489,6 +491,9 @@
                         <button id="saveWeightsBtn" class="primary-btn" onclick="saveWeightsToCloud()" style="margin-top:0.75rem; width: 100%; background: linear-gradient(135deg, #10b981, #059669); border: none;">
                             <i data-lucide="cloud-upload"></i> Save Settings to Cloud
                         </button>
+                        <button id="resetSystemBtn" class="primary-btn" onclick="resetSystemData()" style="margin-top:0.75rem; width: 100%; background: linear-gradient(135deg, #ef4444, #b91c1c); border: none;">
+                            <i data-lucide="rotate-ccw"></i> Reset System Data (Factory Restore)
+                        </button>
                         <div id="weightSaveStatus" style="text-align:center; font-size:0.7rem; color:var(--text-muted); margin-top:0.5rem; min-height:1.2rem;"></div>
 
                         <!-- ADMIN EVENT MANAGEMENT PANEL -->
@@ -595,6 +600,7 @@
                             <div style="display:flex; align-items:center; gap:0.75rem;">
                                 <span class="status-badge" style="background:rgba(99,102,241,0.1); color:var(--accent-primary)">Admin Access Only</span>
                                 <button onclick="renderHirePanel()" style="padding:0.4rem 0.75rem; border-radius:8px; border:1px solid var(--border); background:var(--bg-deep); color:var(--text-secondary); cursor:pointer; font-size:0.8rem; display:flex; align-items:center; gap:0.4rem;"><i data-lucide="refresh-cw" style="width:13px; height:13px;"></i> Refresh</button>
+                                <button onclick="resetSystemData()" style="padding:0.4rem 0.75rem; border-radius:8px; border:1px solid rgba(239,68,68,0.4); background:rgba(239,68,68,0.12); color:#ef4444; cursor:pointer; font-size:0.8rem; font-weight:700; display:flex; align-items:center; gap:0.4rem;" title="Reset all test data back to initial seeds"><i data-lucide="rotate-ccw" style="width:13px; height:13px;"></i> Reset Data</button>
                             </div>
                         </div>
                     </div>
