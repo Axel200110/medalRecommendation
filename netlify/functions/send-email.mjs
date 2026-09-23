@@ -13,6 +13,11 @@ export default async (request) => {
       return json({ message: 'Email service is not configured.' }, 500);
     }
 
+    if (!apiKey.startsWith('xkeysib-')) {
+      console.error('BREVO_API_KEY is not a valid Brevo API key.');
+      return json({ message: 'Brevo API key is invalid.' }, 500);
+    }
+
     let payload;
     try {
       payload = await request.json();
