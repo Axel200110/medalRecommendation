@@ -2,6 +2,9 @@
   command = "npm run build && node scripts/write-config.mjs dist/config.js"
   publish = "dist"
 
+[functions]
+  directory = "netlify/functions"
+
 [[redirects]]
   from = "/*"
   to = "/index.html"

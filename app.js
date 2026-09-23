@@ -2787,65 +2787,28 @@ async function dispatchEmailNotification(toEmail, toName, subject, bodyContent) 
     logSync(`📧 [Email Triggered] To: ${toEmail} | Subject: "${subject}"`, "success");
     showToast(`⚡ Sending email to ${toName} (${toEmail})...`, 'info');
 
-    // METHOD 1: Brevo V3 Direct REST API (uses API Key, NOT SMTP password)
-    if (BREVO_API_KEY) {
-        try {
-            const response = await fetch('https://api.brevo.com/v3/smtp/email', {
-                method: 'POST',
-                headers: {
-                    'accept': 'application/json',
-                    'api-key': BREVO_API_KEY,
-                    'content-type': 'application/json'
-                },
-                body: JSON.stringify({
-                    sender: { name: BREVO_SENDER_NAME, email: BREVO_SENDER_EMAIL },
-                    to: [{ email: toEmail, name: toName }],
-                    subject: subject,
-                    htmlContent: bodyContent
-                })
-            });
+    // METHOD 1: Netlify Function (keeps Brevo API credentials off the browser)
+    try {
+        const response = await fetch('/.netlify/functions/send-email', {
+            method: 'POST',
+            headers: { 'content-type': 'application/json' },
+            body: JSON.stringify({ toEmail, toName, subject, bodyContent })
+        });
 
-            if (response.ok) {
-                showToast(`📧 Email sent successfully to ${toName}!`, 'success');
-                logSync(`☁️ Email delivered via Brevo API to: ${toEmail}`, 'success');
-                return; // ✅ Done — no Gmail tab needed
-            } else {
-                const errData = await response.json().catch(() => ({}));
-                console.warn('Brevo API error:', response.status, errData);
-                logSync(`⚠️ Brevo API response (${response.status}): ${errData.message || response.statusText}`, 'danger');
-            }
-        } catch (apiErr) {
-            console.warn('Brevo API fetch error:', apiErr);
+        if (response.ok) {
+            showToast(`📧 Email sent successfully to ${toName}!`, 'success');
+            logSync(`☁️ Email delivered via Netlify function to: ${toEmail}`, 'success');
+            return;
         }
+
+        const errData = await response.json().catch(() => ({}));
+        console.warn('Email function error:', response.status, errData);
+        logSync(`⚠️ Email function response (${response.status}): ${errData.message || response.statusText}`, 'danger');
+    } catch (functionErr) {
+        console.warn('Email function fetch error:', functionErr);
     }
 
-    // METHOD 2: SMTP.js (uses SMTP password, different from API key)
-    if (typeof Email !== 'undefined' && BREVO_SMTP_PASS) {
-        try {
-            const result = await Email.send({
-                Host:     BREVO_HOST,
-                Username: BREVO_USER,
-                Password: BREVO_SMTP_PASS,
-                To:       toEmail,
-                From:     `${BREVO_SENDER_NAME} <${BREVO_USER}>`,
-                Subject:  subject,
-                Body:     bodyContent,
-            });
-
-            if (result === 'OK') {
-                showToast(`📧 Email sent successfully to ${toName}!`, 'success');
-                logSync(`☁️ Email delivered via SMTP.js to: ${toEmail}`, 'success');
-                return; // ✅ Done
-            } else {
-                console.error('SMTP.js result:', result);
-                logSync(`⚠️ SMTP error: ${result}`, 'danger');
-            }
-        } catch (err) {
-            console.error('SMTP.js exception:', err);
-        }
-    }
-
-    // METHOD 3: Gmail Compose Fallback
+    // METHOD 2: Gmail Compose Fallback
     showToast(`⚠️ Direct dispatch failed. Opening Gmail compose tab...`, 'warning');
     const plainText = bodyContent
         .replace(/<style[^>]*>[\s\S]*?<\/style>/gi, '')
